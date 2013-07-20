@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using LuaSharp;
+using LuaStr = LuaSharp.String;
 
 namespace Tests
 {
@@ -121,7 +122,7 @@ namespace Tests
 		public void AddAndGetStringKey()
 		{
 			var ta = new Table();
-			var str = new LuaSharp.String( "Testing" );
+			var str = new LuaStr( "Testing" );
 
 			Assert.AreEqual( 0, ta.Count() );
 
@@ -163,7 +164,7 @@ namespace Tests
 		}
 
 		[TestMethod]
-		public void TestArrayAccess()
+		public void ArrayAccess()
 		{
 			var ta = new Table();
 
@@ -192,7 +193,7 @@ namespace Tests
 		}
 
 		[TestMethod]
-		public void TestNodeAccess()
+		public void NodeAccess()
 		{
 			var ta = new Table();
 
@@ -221,7 +222,7 @@ namespace Tests
 		}
 
 		[TestMethod]
-		public void TestArrayRemovals()
+		public void ArrayRemovals()
 		{
 			var ta = new Table();
 
@@ -284,7 +285,7 @@ namespace Tests
 		}
 
 		[TestMethod]
-		public void TestNodeRemovals()
+		public void NodeRemovals()
 		{
 			var ta = new Table();
 
@@ -345,6 +346,68 @@ namespace Tests
 			//Assert.AreEqual( oldNodeCap, ta.NodeCapacity );
 			Assert.IsTrue( ta.NodeCapacity <= oldNodeCap * 2 );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
+		}
+
+		[TestMethod]
+		public void ManyKeys()
+		{
+			var strs = new LuaStr[256];
+			for( int i = 0; i < strs.Length; i++ )
+				strs[i] = new LuaStr( string.Format( "str:{0}", i ) );
+			
+			var ta = new Table();
+
+			var acc = new TableAccessor();
+
+			acc.Key.Set( Math.E );
+			acc.Value.Set( Math.PI );
+			acc.RawSet( ta );
+
+			for( int n = 0; n < 4096; n++ )
+			{
+				int i = 1 + ((n * 17) % 13) * ((n * 13) % 17);
+
+				acc.Key.Set( i );
+				acc.RawGet( ta );
+
+				if( acc.Value.IsNil )
+					acc.Value.Set( n );
+				else
+					acc.Value.SetNil();
+
+				acc.RawSet( ta );
+
+				int j = 1 + (((n - 5) * 17) % 13) * (((n + 3) * 13) % 17);
+
+				acc.Key.Set( j * Math.PI );
+				acc.RawGet( ta );
+
+				if( acc.Value.IsNil )
+					acc.Value.Set( n );
+				else
+					acc.Value.SetNil();
+
+				acc.RawSet( ta );
+
+				if( n % 10 == 0 )
+				{
+					var s = strs[n % strs.Length];
+					acc.Key.Set( s );
+
+					acc.RawGet( ta );
+					if( acc.Value.IsNil )
+						acc.Value.Set( n );
+					else
+						acc.Value.SetNil();
+
+					acc.RawSet( ta );
+				}
+			}
+
+			acc.Key.Set( Math.E );
+			acc.RawGet( ta );
+
+			Assert.AreEqual( Math.PI, acc.Value.ToDouble() );
 		}
 	}
 }

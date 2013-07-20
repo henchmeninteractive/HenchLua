@@ -6,20 +6,6 @@ using System.Threading.Tasks;
 
 namespace LuaSharp
 {
-	public enum ValueType
-	{
-		Nil,
-
-		Bool,
-
-		Number,
-		
-		String,
-		Table,
-		UserData,		
-		Function,
-	}
-
 	/// <summary>
 	/// Nicely wraps up both closures and callbacks.
 	/// </summary>
