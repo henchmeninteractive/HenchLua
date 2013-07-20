@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2012 for Windows Desktop
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LuaSharp", "LuaSharp\LuaSharp.csproj", "{BF04E3F0-C8C1-4B68-B88E-022E334486DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lua", "Lua\Lua.csproj", "{82690FC8-D2FF-40B6-97DB-33FA054FFA16}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{FD1F7FD1-3AC7-43F8-9BD8-8AF048FE15A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExposedObject", "ExposedObject\ExposedObject.csproj", "{B42EE1C7-0B53-42C9-B362-945A2DF52173}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BF04E3F0-C8C1-4B68-B88E-022E334486DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF04E3F0-C8C1-4B68-B88E-022E334486DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF04E3F0-C8C1-4B68-B88E-022E334486DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF04E3F0-C8C1-4B68-B88E-022E334486DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82690FC8-D2FF-40B6-97DB-33FA054FFA16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82690FC8-D2FF-40B6-97DB-33FA054FFA16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82690FC8-D2FF-40B6-97DB-33FA054FFA16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82690FC8-D2FF-40B6-97DB-33FA054FFA16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD1F7FD1-3AC7-43F8-9BD8-8AF048FE15A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD1F7FD1-3AC7-43F8-9BD8-8AF048FE15A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD1F7FD1-3AC7-43F8-9BD8-8AF048FE15A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD1F7FD1-3AC7-43F8-9BD8-8AF048FE15A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B42EE1C7-0B53-42C9-B362-945A2DF52173}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B42EE1C7-0B53-42C9-B362-945A2DF52173}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B42EE1C7-0B53-42C9-B362-945A2DF52173}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B42EE1C7-0B53-42C9-B362-945A2DF52173}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
