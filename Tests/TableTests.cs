@@ -1,10 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-using LuaSharp;
-using LuaStr = LuaSharp.String;
-
-namespace Tests
+namespace LuaSharp.Tests
 {
 	[TestClass]
 	public class TableTests
@@ -43,7 +40,7 @@ namespace Tests
 		public void ReadNilKeyTest2()
 		{
 			var ta = new Table();
-			var x = ta[new LuaStr()];
+			var x = ta[new String()];
 		}
 
 		[TestMethod,
@@ -59,7 +56,7 @@ namespace Tests
 		public void WriteNilKeyTest2()
 		{
 			var ta = new Table();
-			ta[new LuaStr()] = 4;
+			ta[new String()] = 4;
 		}
 
 		[TestMethod]
@@ -120,9 +117,9 @@ namespace Tests
 		[TestMethod]
 		public void AddAndGetStringKey()
 		{
-			var sa1 = new LuaStr( "A" );
-			var sa2 = new LuaStr( "A" );
-			var sb = new LuaStr( "B" );
+			var sa1 = new String( "A" );
+			var sa2 = new String( "A" );
+			var sb = new String( "B" );
 
 			var ta = new Table();
 
@@ -162,10 +159,10 @@ namespace Tests
 			const int max = 2048;
 
 			for( int i = 0; i < max; i++ )
-				ta[new LuaStr( string.Format( "str:{0}", i ) )] = i;
+				ta[new String( string.Format( "str:{0}", i ) )] = i;
 
 			for( int i = 0; i < max; i++ )
-				Assert.AreEqual( i, ta[new LuaStr( string.Format( "str:{0}", i ) )] );
+				Assert.AreEqual( i, ta[new String( string.Format( "str:{0}", i ) )] );
 		}
 
 		[TestMethod]
@@ -285,9 +282,9 @@ namespace Tests
 		[TestMethod]
 		public void ManyKeys()
 		{
-			var strs = new LuaStr[256];
+			var strs = new String[256];
 			for( int i = 0; i < strs.Length; i++ )
-				strs[i] = new LuaStr( string.Format( "str:{0}", i ) );
+				strs[i] = new String( string.Format( "str:{0}", i ) );
 
 			var ta = new Table();
 
@@ -303,7 +300,7 @@ namespace Tests
 				var jKey = j * Math.PI;
 				ta[jKey] = ta[jKey] == null ? (Value)n : null;
 				
-				var sjKey = new LuaStr( string.Format( "jKey:{0}", j ) );
+				var sjKey = new String( string.Format( "jKey:{0}", j ) );
 				ta[sjKey] = ta[sjKey] == null ? (Value)n : null;
 
 				if( n % 10 == 0 )

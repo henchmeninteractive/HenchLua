@@ -1,0 +1,188 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using Debug = System.Diagnostics.Debug;
+
+namespace LuaSharp
+{
+	internal class Proto : Function
+	{
+		internal Instruction[] Code;
+
+		internal Value[] Constants;
+		internal UpValDesc[] UpValues;
+
+		internal Proto[] InnerProtos;
+
+		internal struct UpValDesc
+		{
+#if DEBUG_API
+			public String Name;
+#endif
+
+			public bool InStack;
+			public byte Index;
+		}
+
+		internal byte NumParams;
+		internal byte MaxStack;
+		internal bool HasVarArgs;
+
+#if DEBUG_API
+		private int[] lineInfo;
+		LocalVarDesc[] localVars;
+
+		private struct LocalVarDesc
+		{
+			public String Name;
+			public int StartPC, endPC;
+		}
+
+		String source;
+
+		private int startLine, endLine;
+#endif
+
+		internal static Proto Load( BinaryReader reader )
+		{
+			var lineDefined = reader.ReadInt32();
+			var lastLineDefined = reader.ReadInt32();
+
+			var numParams = reader.ReadByte();
+			var hasVarArgs = reader.ReadByte() != 0;
+			var maxStack = reader.ReadByte();
+
+			//code
+
+			var codeLen = reader.ReadInt32();
+			var code = new Instruction[codeLen];
+			for( int i = 0; i < code.Length; i++ )
+				code[i].PackedValue = reader.ReadUInt32();
+
+			//constants
+
+			var numConsts = reader.ReadInt32();
+			var constants = new Value[numConsts];
+			for( int i = 0; i < constants.Length; i++ )
+			{
+				var type = reader.ReadByte();
+				switch( type )
+				{
+				case 0: //nil
+					break;
+
+				case 1: //bool
+					constants[i].Set( reader.ReadByte() != 0 );
+					break;
+
+				case 3: //number
+					constants[i].Set( reader.ReadDouble() );
+					break;
+
+				case 4: //string
+					constants[i].Set( LoadString( reader ) );
+					break;
+
+				default:
+					throw new InvalidDataException( "Invalid constant type." );
+				}
+			}
+
+			//inner functions
+
+			int numInnerProtos = reader.ReadInt32();
+			var innerProtos = new Proto[numInnerProtos];
+			for( int i = 0; i < innerProtos.Length; i++ )
+				innerProtos[i] = Load( reader );
+
+			//upvalues
+
+			int numUpValues = reader.ReadInt32();
+			var upValues = new UpValDesc[numUpValues];
+			for( int i = 0; i < upValues.Length; i++ )
+			{
+				upValues[i].InStack = reader.ReadByte() != 0;
+				upValues[i].Index = reader.ReadByte();
+			}
+
+			//debug info
+
+			var source = LoadString( reader );
+			
+			int numLineInfos = reader.ReadInt32();
+			var lineInfos = new int[numLineInfos];
+			for( int i = 0; i < lineInfos.Length; i++ )
+				lineInfos[i] = reader.ReadInt32();
+
+			int numLocalVars = reader.ReadInt32();
+			var localVars = new LocalVarDesc[numLocalVars];
+			for( int i = 0; i < numLocalVars; i++ )
+			{
+				localVars[i].Name = LoadString( reader );
+				localVars[i].StartPC = reader.ReadInt32();
+				localVars[i].endPC = reader.ReadInt32();
+			}
+
+			int numUpValueInfos = reader.ReadInt32();
+			if( numUpValueInfos > numUpValues )
+				throw new InvalidDataException( "Too much debug info." );
+
+			for( int i = 0; i < numUpValueInfos; i++ )
+				upValues[i].Name = LoadString( reader );
+
+			//and done!
+
+			return new Proto()
+			{
+				startLine = lineDefined,
+				endLine = lastLineDefined,
+
+				NumParams = numParams,
+				HasVarArgs = hasVarArgs,
+				MaxStack = maxStack,
+
+				Code = code,
+				Constants = constants,
+				InnerProtos = innerProtos,
+
+				UpValues = upValues,
+
+				source = source,
+				lineInfo = lineInfos,
+				localVars = localVars,
+			};
+		}
+
+		private static String LoadString( BinaryReader reader )
+		{
+			var len = reader.ReadUInt32(); //size_t
+			if( len == 0 )
+				return new String();
+
+			if( len > int.MaxValue )
+				throw new InvalidDataException( "Can't load ENORMOUS string constant." );
+
+			var buf = String.InternalAllocBuffer( (int)len );
+			reader.BaseStream.Read( buf, String.BufferDataOffset, (int)len );
+			return String.InternalFinishBuffer( buf );
+		}
+
+		private struct LoadState
+		{
+			public String Name;
+			private Stream byteCode;
+
+			public LoadState( Stream byteCode, String name )
+			{
+				this.byteCode = byteCode;
+				this.Name = name;
+			}
+		}
+
+		
+	}
+}

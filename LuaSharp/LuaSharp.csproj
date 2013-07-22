@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;DEBUG_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -40,8 +40,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Box.cs" />
+    <Compile Include="Function.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Instruction.cs" />
+    <Compile Include="Proto.cs" />
     <Compile Include="String.cs" />
     <Compile Include="Table.cs" />
     <Compile Include="Thread.cs" />

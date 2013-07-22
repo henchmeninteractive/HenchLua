@@ -1,10 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-using LuaSharp;
-using LuaStr = LuaSharp.String;
-
-namespace Tests
+namespace LuaSharp.Tests
 {
 	[TestClass]
 	public class ValueTests
@@ -98,9 +95,9 @@ namespace Tests
 		[TestMethod]
 		public void Strings()
 		{
-			var a1 = new LuaStr( "A" );
-			var a2 = new LuaStr( "A" );
-			var b = new LuaStr( "B" );
+			var a1 = new String( "A" );
+			var a2 = new String( "A" );
+			var b = new String( "B" );
 
 			Value va1 = a1;
 			Value va2 = a2;
@@ -118,6 +115,12 @@ namespace Tests
 
 			Assert.AreEqual( va1, va2 );
 			Assert.AreNotEqual( va1, vb );
+
+			Value nil = 4;
+			Assert.AreEqual( 4, nil );
+			nil.Set( new String() );
+			Assert.AreEqual( null, nil );
+			Assert.IsTrue( nil.IsNil );
 		}
 	}
 }

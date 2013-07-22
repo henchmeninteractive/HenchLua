@@ -99,6 +99,21 @@ namespace LuaSharp
 			return new String() { InternalData = internalData };
 		}
 
+		internal const int BufferDataOffset = 4;
+		internal static byte[] InternalAllocBuffer( int length )
+		{
+			Debug.Assert( length >= 0 );
+			return new byte[length + 4];
+		}
+
+		internal static String InternalFinishBuffer( byte[] buffer )
+		{
+			Debug.Assert( buffer != null );
+			var ret = new String { InternalData = buffer };
+			ret.UpdateHashCode();
+			return ret;
+		}
+
 		/// <summary>
 		/// Gets the length of the string, in bytes.
 		/// </summary>
@@ -113,6 +128,29 @@ namespace LuaSharp
 
 				return InternalData[4 + index];
 			}
+		}
+
+		public String Substring( int index, int count )
+		{
+			if( InternalData == null )
+				return new String();
+
+			if( count == 0 )
+				return String.Empty;
+
+			if( index < 0 )
+				throw new ArgumentOutOfRangeException( "index" );
+			if( count < 0 )
+				throw new ArgumentOutOfRangeException( "count" );
+			if( Lenght - index < count )
+				throw new ArgumentOutOfRangeException( "count" );
+
+			return new String( InternalData, 4 + index, count );
+		}
+
+		public String Substring( int index )
+		{
+			return Substring( index, Lenght - index );
 		}
 
 		internal static bool InternalEquals( byte[] a, byte[] b )
