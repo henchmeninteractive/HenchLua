@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LuaSharp;
 
 using LuaStr = LuaSharp.String;
+using System.Collections.Generic;
 
 namespace Tests
 {
@@ -37,6 +38,12 @@ namespace Tests
 			Assert.IsTrue( StrInternals.InternalEquals( intA, intA ) );
 			Assert.IsTrue( StrInternals.InternalEquals( intB, intB ) );
 			Assert.IsFalse( StrInternals.InternalEquals( intA, intB ) );
+
+			var a2 = new LuaStr( "A" );
+
+			Assert.IsTrue( LuaStr.Equals( a, a2 ) );
+			Assert.IsTrue( a == a2 );
+			Assert.AreEqual( a, a2 );
 		}
 
 		[TestMethod]
@@ -55,6 +62,24 @@ namespace Tests
 			var b = new LuaStr( "B" );
 
 			Assert.AreNotEqual( a.GetHashCode(), b.GetHashCode() );
+		}
+
+		[TestMethod]
+		public void ManyEquals()
+		{
+			var strs = new List<LuaStr>();
+			
+			for( int i = 0; i < 4096; i++ )
+				strs.Add( new LuaStr( string.Format( "s:{0}", i ) ) );
+
+			for( int i = 0; i < strs.Count; i++ )
+			{
+				var so = strs[i];
+				var sn = new LuaStr( string.Format( "s:{0}", i ) );
+
+				Assert.AreEqual( so, sn );
+				Assert.AreEqual( so.GetHashCode(), sn.GetHashCode() );
+			}
 		}
 	}
 }

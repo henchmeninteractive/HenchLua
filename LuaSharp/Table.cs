@@ -20,25 +20,32 @@ namespace LuaSharp
 			if( numArraySlots < 0 || numNodes < 0 )
 				throw new ArgumentOutOfRangeException();
 
-			if( numArraySlots > 0 )
-				array = new Value[numArraySlots];
-
 			nodes = EmptyNodes;
 			Resize( numArraySlots, numNodes );
 		}
 
-		private Table metaTable;
-
-		private Node[] nodes;
-		private Value[] array;
-
-		private int lastFreeNode;
+		private CompactValue[] array;
 		
-		public int ArrayCapacity { get { return array != null ? array.Length : 0; } }
-		public int NodeCapacity { get { return nodes != EmptyNodes ? nodes.Length : 0; } }
-		public int Capacity { get { return ArrayCapacity + NodeCapacity; } }
+		private Node[] nodes;
+		private int lastFreeNode;
+
+		private static readonly object DeadKey = new object();
+		private static readonly Node[] EmptyNodes = new Node[1] { new Node { Next = -1 } };
+
+		private struct Node
+		{
+			public CompactValue Key;
+			public CompactValue Value;
+			public int Next;
+		}
 
 		private int GetMainPosition( Value key )
+		{
+			int hash = key.GetHashCode();
+			return (hash & 0x7FFFFFFF) % nodes.Length;
+		}
+
+		private int GetMainPosition( CompactValue key )
 		{
 			int hash = key.GetHashCode();
 			return (hash & 0x7FFFFFFF) % nodes.Length;
@@ -47,40 +54,71 @@ namespace LuaSharp
 		private int GetMainPosition( double key )
 		{
 			int hash = Value.GetHashCode( key );
-			return hash % nodes.Length;
+			return (hash & 0x7FFFFFFF) % nodes.Length;
 		}
 
 		private int GetMainPosition( String key )
 		{
 			int hash = key.GetHashCode();
-			return hash % nodes.Length;
+			return (hash & 0x7FFFFFFF) % nodes.Length;
 		}
 
 		private int GetFreePosition()
 		{
 			while( lastFreeNode > 0 )
 			{
+				/* Warning: a subtle nuance follows:
+				 * 
+				 * Everywhere else in Table, we're testing node.Value
+				 * for nil in order to identify free positions. However,
+				 * here we test Key. This is because Key might be DeadKey,
+				 * meaning that the node is part of a probing chain. Reusing
+				 * the node could break that chain, so we leave it alone.
+				 * 
+				 * Ideally, the chaining logic (down in InsertNewKey) would be
+				 * smart enough to handle this case, and we could safely reuse
+				 * slots during collision resolutions, reducing the number of
+				 * reallocations.
+				 */
+
 				lastFreeNode--;
-				if( nodes[lastFreeNode].Value.Val == null )
+				if( nodes[lastFreeNode].Key.Val == null )
 					return lastFreeNode;
 			}
 
 			return -1;
 		}
 
-		/// <summary>
-		/// Returns key as an integer if its value is an integer,
-		/// else returns -1.
-		/// </summary>
 		private static int ValueToInt( Value key )
 		{
-			double num;
-			if( !key.TryGetAsNumber( out num ) )
+			if( key.RefVal != Value.NumTypeTag )
 				return -1;
 
-			int n = (int)num;
-			return (double)n == num ? n : -1;
+			var num = key.NumVal;
+			var ret = (int)num;
+
+			return (double)ret == num ? ret : -1;
 		}
+
+		private static int ValueToInt( CompactValue key )
+		{
+			var asNum = key.Val as NumBox;
+			if( asNum == null )
+				return -1;
+
+			var num = asNum.Value;
+			var ret = (int)num;
+
+			return (double)ret == num ? ret : -1;
+		}
+
+		private static int ValueToInt( double key )
+		{
+			var ret = (int)key;
+			return (double)ret == key ? ret : -1;
+		}
+
+		#region FindValue
 
 		/// <summary>
 		/// Finds the key's location in the table (returns 0 if not found).
@@ -106,11 +144,31 @@ namespace LuaSharp
 			return 0;
 		}
 
+		internal int FindValueInNodes( int key )
+		{
+			double dKey = key;
+
+			int i = GetMainPosition( dKey );
+			while( i != -1 )
+			{
+				var node = nodes[i];
+				if( node.Key.Equals( dKey ) )
+					return -(i + 1);
+
+				i = node.Next;
+			}
+
+			return 0;
+		}
+
 		/// <summary>
 		/// Finds the key's location in the table (returns 0 if not found).
 		/// </summary>
 		internal int FindValue( String key )
 		{
+			if( key.InternalData == null )
+				throw new ArgumentNullException( "key" );
+
 			int i = GetMainPosition( key );
 			while( i != -1 )
 			{
@@ -126,6 +184,9 @@ namespace LuaSharp
 
 		internal int FindValue( Value key )
 		{
+			if( key.RefVal == null )
+				throw new ArgumentNullException( "key" );
+
 			if( array != null )
 			{
 				int arrIdx = ValueToInt( key );
@@ -146,19 +207,67 @@ namespace LuaSharp
 			return 0;
 		}
 
-		internal Value ReadValue( int loc )
+		internal int FindValue( CompactValue key )
 		{
-			if( loc > 0 )
-				return array[loc - 1];
-			if( loc < 0 )
-				return nodes[-loc - 1].Value;
-			return new Value();
+			if( key.Val == null )
+				throw new ArgumentNullException( "key" );
+
+			if( array != null )
+			{
+				int arrIdx = ValueToInt( key );
+				if( arrIdx > 0 && arrIdx <= array.Length )
+					return arrIdx;
+			}
+
+			int i = GetMainPosition( key );
+			while( i != -1 )
+			{
+				var node = nodes[i];
+				if( node.Key.Equals( key ) )
+					return -(i + 1);
+
+				i = node.Next;
+			}
+
+			return 0;
+		}
+
+		#endregion
+
+		/// <summary>
+		/// Take care not to clone the returned value, as you may
+		/// accidentally turn a number into a reference type!
+		/// </summary>
+		internal bool ReadValue( int loc, out CompactValue value )
+		{
+			if( loc == 0 )
+			{
+				value = new CompactValue();
+				return false;
+			}
+
+			value = loc > 0 ? array[loc - 1] : nodes[-loc - 1].Value;
+			return true;
+		}
+
+		internal bool ReadValue( int loc, out Value value )
+		{
+			if( loc == 0 )
+			{
+				value = new Value();
+				return false;
+			}
+
+			var val = loc > 0 ? array[loc - 1] : nodes[-loc - 1].Value;
+			val.ToValue( out value );
+
+			return true;
 		}
 
 		/// <summary>
-		/// Note: val must not be aliased if it holds a number!
+		/// Note: take care to avoid aliasing val - the table copies it in.
 		/// </summary>
-		internal void WriteValue( int loc, Value val )
+		internal void WriteValue( int loc, CompactValue val )
 		{
 			Debug.Assert( loc != 0 );
 
@@ -174,61 +283,91 @@ namespace LuaSharp
 
 				if( val.Val == null )
 					//don't have a GC to sweep up later,
-					//so we need to clear the key out now
+					//so we need to clear the key out now,
 					//but we can't break any chains!
 					nodes[loc].Key.Val = DeadKey;
 			}
 		}
 
-		internal Value GetValue( int key )
+		internal void WriteValue( int loc, Value val )
 		{
-			return ReadValue( FindValue( key ) );
+			WriteValue( loc, new CompactValue( val ) );
 		}
 
-		internal Value GetValue( String key )
+		#region this[]
+
+		public Value this[Value key]
 		{
-			return ReadValue( FindValue( key ) );
+			get
+			{
+				Value ret;
+
+				int loc = FindValue( key );
+				ReadValue( loc, out ret );
+
+				return ret;
+			}
+
+			set
+			{
+				int loc = FindValue( key );
+				if( loc == 0 )
+					loc = InsertNewKey( new CompactValue( key ) );
+				WriteValue( loc, value );
+			}
 		}
 
-		internal Value GetValue( Value key )
+		public Value this[int key]
 		{
-			return ReadValue( FindValue( key ) );
+			get
+			{
+				Value ret;
+
+				int loc = FindValue( key );
+				ReadValue( loc, out ret );
+
+				return ret;
+			}
+
+			set
+			{
+				int loc = FindValue( key );
+				if( loc == 0 )
+					loc = InsertNewKey( new CompactValue( key ) );
+				WriteValue( loc, value );
+			}
 		}
 
-		internal void SetValue( int key, Value value )
+		public Value this[String key]
 		{
-			var loc = FindValue( key );
-			if( loc == 0 )
-				loc = InsertNewKey( new Value( (double)key ) );
-			
-			WriteValue( loc, value );
+			get
+			{
+				Value ret;
+
+				int loc = FindValue( key );
+				ReadValue( loc, out ret );
+
+				return ret;
+			}
+
+			set
+			{
+				int loc = FindValue( key );
+				if( loc == 0 )
+					loc = InsertNewKey( new CompactValue( key ) );
+				WriteValue( loc, value );
+			}
 		}
 
-		internal void SetValue( String key, Value value )
-		{
-			var loc = FindValue( key );
-			if( loc == 0 )
-				loc = InsertNewKey( new Value( key ) );
-			
-			WriteValue( loc, value );
-		}
+		#endregion
 
-		internal void SetValue( Value key, Value value )
-		{
-			var loc = FindValue( key );
-			if( loc == 0 )
-				loc = InsertNewKey( key );
-				
-			WriteValue( loc, value );
-		}
-
-		internal int InsertNewKey( Value key )
+		internal int InsertNewKey( CompactValue key )
 		{
 			if( key.Val == null )
 				throw new ArgumentNullException( "key" );
 
-			double asNum;
-			if( key.TryGetAsNumber( out asNum ) && double.IsNaN( asNum ) )
+			var asNumKey = key.Val as NumBox;
+			if( asNumKey != null && double.IsNaN( asNumKey.Value ) )
 				throw new ArgumentException( "key is NaN", "key" );
 
 			if( nodes == EmptyNodes )
@@ -236,9 +375,9 @@ namespace LuaSharp
 
 		insert:
 
-			if( array != null )
+			if( array != null && asNumKey != null )
 			{
-				int asArrIdx = ValueToInt( key );
+				int asArrIdx = ValueToInt( asNumKey.Value );
 				if( asArrIdx > 0 && asArrIdx <= array.Length )
 					return asArrIdx;
 			}
@@ -255,7 +394,9 @@ namespace LuaSharp
 					goto insert;
 				}
 
+				Debug.Assert( nodes[freePos].Key.Val == null );
 				Debug.Assert( nodes[freePos].Value.Val == null );
+				Debug.Assert( nodes[freePos].Next == -1 );
 
 				int otherMainPos = GetMainPosition( nodes[mainPos].Key );
 				if( mainPos == otherMainPos )
@@ -293,7 +434,7 @@ namespace LuaSharp
 					nodes[freePos] = nodes[mainPos]; //takes next along for the ride
 					nodes[mainPos].Next = -1;
 
-					nodes[mainPos].Value = new Value();
+					nodes[mainPos].Value.Val = null;
 				}
 			}
 
@@ -313,7 +454,7 @@ namespace LuaSharp
 		/// </summary>
 		private const int MaxSize = 1 << MaxBits;
 
-		private void Grow( Value newKey )
+		private void Grow( CompactValue newKey )
 		{
 			var arrayHist = new int[MaxBits + 1];
 
@@ -416,13 +557,21 @@ namespace LuaSharp
 			Resize( newArrayLen, totalKeys - newArrayKeys );
 		}
 
+#if DEBUG
+		private bool isResizing;
+#endif
+
 		internal void Resize( int numArraySlots, int numNodes )
 		{
+#if DEBUG
+			Debug.Assert( !isResizing );
+			isResizing = true;
+#endif
 			Debug.Assert( numArraySlots >= 0 && numNodes >= 0 );
 
 			var oldArray = array;
 			int oldArraySlots = oldArray != null ? oldArray.Length : 0;
-			array = numArraySlots != 0 ? new Value[numArraySlots] : null;
+			array = numArraySlots != 0 ? new CompactValue[numArraySlots] : null;
 
 			var oldNodes = nodes;
 			if( numNodes > 0 )
@@ -455,17 +604,29 @@ namespace LuaSharp
 
 			if( oldArray != null )
 			{
+				//we know that none of these values will land in the array,
+				//so we temporarily null it out in order to prevent InsertNewKey
+				//from doing an unnecessary "does it land in the array part" check
+
+				var newArr = array;
+				array = null;
+
 				for( int i = copyArraySlots; i < oldArray.Length; i++ )
 				{
 					var val = oldArray[i];
-					if( val.Val != null )
-						SetValue( i, val );
+					if( val.Val == null )
+						continue;
+
+					var key = new CompactValue( i );
+					var loc = InsertNewKey( key );
+
+					Debug.Assert( loc < 0 );
+					nodes[-loc - 1].Value = val;
 				}
+
+				array = newArr;
+				oldArray = null;
 			}
-
-			//done with the old array
-
-			oldArray = null;
 
 			//on to the nodes!
 
@@ -478,10 +639,17 @@ namespace LuaSharp
 				int loc = InsertNewKey( node.Key );
 				WriteValue( loc, node.Value );
 			}
+
+#if DEBUG
+			isResizing = false;
+#endif
 		}
 
-		private static readonly object DeadKey = new object();
-		private static readonly Node[] EmptyNodes = new Node[1] { new Node { Next = -1 } };
+		#region Misc accessors
+
+		public int ArrayCapacity { get { return array != null ? array.Length : 0; } }
+		public int NodeCapacity { get { return nodes != EmptyNodes ? nodes.Length : 0; } }
+		public int Capacity { get { return ArrayCapacity + NodeCapacity; } }
 
 		public int Count()
 		{
@@ -505,215 +673,6 @@ namespace LuaSharp
 			return ret;
 		}
 
-		internal struct Value
-		{
-			public object Val;
-
-			public Value( bool value )
-			{
-				Val = value ? BoolBox.True : BoolBox.False;
-			}
-
-			public Value( double value )
-			{
-				Val = new NumBox( value );
-			}
-
-			public Value( String value )
-			{
-				if( value.InternalData == null )
-					throw new ArgumentNullException();
-
-				Val = value.InternalData;
-			}
-
-			public bool TryGetAsNumber( out double num )
-			{
-				var asBox = Val as NumBox;
-				if( asBox != null )
-				{
-					num = asBox.Value;
-					return true;
-				}
-
-				num = 0;
-				return false;
-			}
-
-			public void Set( bool value )
-			{
-				Val = value ? BoolBox.True : BoolBox.False;
-			}
-
-			public void Set( double value )
-			{
-				var asBox = Val as NumBox;
-				if( asBox != null )
-					asBox.Value = value;
-				else
-					Val = new NumBox( value );
-			}
-
-			public void Set( String value )
-			{
-				if( value.InternalData == null )
-					throw new ArgumentNullException();
-
-				Val = value.InternalData;
-			}
-
-			public void Set( object value )
-			{
-				var asUserByteArray = value as byte[];
-				if( asUserByteArray != null )
-					SetUserByteArray( asUserByteArray );
-				else
-					Val = value;
-			}
-
-			private void SetUserByteArray( byte[] value )
-			{
-				var asWrapper = Val as UserByteArrayWrapper;
-				if( asWrapper != null )
-					asWrapper.Value = value;
-				else
-					Val = new UserByteArrayWrapper( value );
-			}
-
-			public bool Equals( double value )
-			{
-				var asNum = Val as NumBox;
-				return asNum != null && asNum.Value == value;
-			}
-
-			public bool Equals( String value )
-			{
-				var asStr = Val as byte[];
-				return asStr != null && String.InternalEquals( asStr, value.InternalData );
-			}
-
-			public bool Equals( Value other )
-			{
-				if( Val == other.Val )
-					return true;
-
-				var asNum = Val as NumBox;
-				if( asNum != null )
-				{
-					var asOtherNum = other.Val as NumBox;
-					if( asOtherNum != null )
-						return asNum.Value == asOtherNum.Value;
-				}
-
-				var asStr = Val as byte[];
-				if( asStr != null )
-				{
-					var asOtherStr = other.Val as byte[];
-					if( asOtherStr != null )
-						return String.InternalEquals( asStr, asOtherStr );
-				}
-
-				var asWrapper = Val as UserByteArrayWrapper;
-				if( asWrapper != null )
-				{
-					var asOtherWrapper = other.Val as UserByteArrayWrapper;
-					if( asOtherWrapper != null )
-						return asWrapper.Value == asOtherWrapper.Value;
-				}
-
-				return false;
-			}
-
-			public override bool Equals( object obj )
-			{
-				return obj is Value && Equals( (Value)obj );
-			}
-
-			public override int GetHashCode()
-			{
-				//bool, nil (nil is just a sanity check)
-
-				if( Val == null || Val == BoolBox.False )
-					return 0;
-
-				if( Val == BoolBox.True )
-					return 1;
-
-				//number
-
-				var asNumBox = Val as NumBox;
-				if( asNumBox != null )
-					return GetHashCode( asNumBox.Value );
-
-				//string
-
-				var asStr = Val as byte[];
-				if( asStr != null )
-					return String.InternalGetHashCode( asStr );
-
-				//userdata, closure, function...
-
-				var val = Val;
-
-				var asWrapper = val as UserByteArrayWrapper;
-				if( asWrapper != null )
-					val = asWrapper.Value;				
-
-				return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode( val );
-			}
-
-			public static int GetHashCode( double value )
-			{
-				var i = BitConverter.DoubleToInt64Bits( value );
-				return (int)i ^ (int)(i >> 32);
-			}
-
-			public ValueType ValueType
-			{
-				get
-				{
-					if( Val == null )
-						return ValueType.Nil;
-
-					if( Val == BoolBox.True ||
-						Val == BoolBox.False )
-						return ValueType.Bool;
-
-					if( Val is NumBox )
-						return ValueType.Number;
-
-					if( Val is byte[] )
-						return ValueType.String;
-
-					if( Val is Table )
-						return ValueType.Table;
-
-					if( Callable.IsCallable( Val ) )
-						return ValueType.Function;
-
-					return ValueType.UserData;
-				}
-			}
-		}
-
-		private struct Node
-		{
-			public Value Key, Value;
-			public int Next;
-		}
-
-		private class UserByteArrayWrapper
-		{
-			public byte[] Value;
-			
-			public UserByteArrayWrapper()
-			{
-			}
-
-			public UserByteArrayWrapper( byte[] value )
-			{
-				this.Value = value;
-			}
-		}
+		#endregion
 	}
 }

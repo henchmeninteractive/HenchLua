@@ -201,6 +201,9 @@ namespace LuaSharp
 				return;
 			}
 
+			if( value is byte[] )
+				value = new UserDataWrapper( value );
+
 			RefVal = value;
 		}
 
@@ -442,35 +445,30 @@ namespace LuaSharp
 		public bool Equals( String str )
 		{
 			var asStr = RefVal as byte[];
-			return asStr != null && String.InternalEquals( asStr, str.InternalData );
+			return String.InternalEquals( asStr, str.InternalData );
 		}
 
 		public bool Equals( Value other )
 		{
-			if( RefVal != other.RefVal )
-				return false;
-
-			if( RefVal == NumTypeTag )
-				return NumVal == other.NumVal;
-
-			return true;
+			return Equals( this, other );
 		}
 
 		public override bool Equals( object obj )
 		{
 			var asVal = obj is Value ? (Value)obj : new Value( obj );
-			return Equals( asVal );
+			return Equals( this, asVal );
 		}
 
 		public static bool Equals( Value a, Value b )
 		{
-			if( a.RefVal != b.RefVal )
-				return false;
+			if( a.RefVal == b.RefVal )
+				return a.RefVal != NumTypeTag || a.NumVal == b.NumVal;
 
-			if( a.RefVal == NumTypeTag )
-				return a.NumVal == b.NumVal;
+			var asStrA = a.RefVal as byte[];
+			if( asStrA != null )
+				return String.InternalEquals( asStrA, b.RefVal as byte[] );
 
-			return true;
+			return false;
 		}
 
 		#region operators
@@ -586,6 +584,167 @@ namespace LuaSharp
 
 				this.Value = value;
 			}
+		}
+	}
+
+	/// <summary>
+	/// A more compact Value representation.
+	/// This type boxes its numbers, and reuses the boxes to reduce GC thrashing.
+	/// Do -NOT- blithely copy this type around, as it can cause issues with the boxed numbers.
+	/// </summary>
+	internal struct CompactValue
+	{
+		internal object Val;
+
+		public CompactValue( Value value )
+		{
+			if( value.RefVal == Value.NumTypeTag )
+				Val = new NumBox( value.NumVal );
+			else
+				Val = value.RefVal;
+		}
+
+		public CompactValue( double value )
+		{
+			Val = new NumBox( value );
+		}
+
+		public CompactValue( String value )
+		{
+			Val = value.InternalData;
+		}
+
+		public void Set( Value value )
+		{
+			if( value.RefVal == Value.NumTypeTag )
+				Set( value.NumVal );
+			else
+				Val = value.RefVal;
+		}
+
+		public void Set( double value )
+		{
+			var asNum = Val as NumBox;
+			if( asNum == null )
+				Val = asNum = new NumBox();
+			asNum.Value = value;
+		}
+
+		public double ToDouble()
+		{
+			var asNum = Val as NumBox;
+			return asNum != null ? asNum.Value : 0;
+		}
+
+		public void ToValue( out Value v )
+		{
+			var asNum = Val as NumBox;
+			if( asNum != null )
+			{
+				v.RefVal = Value.NumTypeTag;
+				v.NumVal = asNum.Value;
+			}
+			else
+			{
+				v.RefVal = Val;
+				v.NumVal = 0;
+			}
+		}
+
+		public Value ToValue()
+		{
+			Value ret;
+			ToValue( out ret );
+			return ret;
+		}
+
+		public static bool Equals( CompactValue a, CompactValue b )
+		{
+			if( a.Val == b.Val )
+				return true;
+
+			var asNumA = a.Val as NumBox;
+			if( asNumA != null )
+			{
+				var asNumB = b.Val as NumBox;
+				return asNumB != null && asNumA.Value == asNumB.Value;
+			}
+
+			var asStrA = a.Val as byte[];
+			if( asStrA != null )
+				return String.InternalEquals( asStrA, b.Val as byte[] );
+
+			return false;
+		}
+
+		public bool Equals( CompactValue other )
+		{
+			return Equals( this, other );
+		}
+
+		public override bool Equals( object obj )
+		{
+			return obj is CompactValue && Equals( (CompactValue)obj );
+		}
+
+		public bool Equals( Value value )
+		{
+			if( Val == value.RefVal )
+				return true;
+
+			if( value.RefVal == Value.NumTypeTag )
+			{
+				var asNum = Val as NumBox;
+				return asNum != null && asNum.Value == value.NumVal;
+			}
+
+			var asStr = Val as byte[];
+			if( asStr != null )
+				return String.InternalEquals( asStr, value.RefVal as byte[] );
+
+			return false;
+		}
+
+		public bool Equals( double value )
+		{
+			var asNum = Val as NumBox;
+			return asNum != null && asNum.Value == value;
+		}
+
+		public bool Equals( String value )
+		{
+			Debug.Assert( value.InternalData != null );
+			return String.InternalEquals( value.InternalData, Val as byte[] );
+		}
+
+		public override int GetHashCode()
+		{
+			if( Val == null || Val == BoolBox.False )
+				return 0;
+
+			if( Val == BoolBox.True )
+				return 1;
+
+			var asNum = Val as NumBox;
+			if( asNum != null )
+				return Value.GetHashCode( asNum.Value );
+
+			var asStr = Val as byte[];
+			if( asStr != null )
+				return String.InternalGetHashCode( asStr );
+
+			var val = Val;
+
+			var asWrapper = val as Value.UserDataWrapper;
+			if( asWrapper != null )
+				val = asWrapper.Value;
+
+			return Value.GetHashCode( val );
+		}
+
+		public override string ToString()
+		{
+			return ToValue().ToString();
 		}
 	}
 }

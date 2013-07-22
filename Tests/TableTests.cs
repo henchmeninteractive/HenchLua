@@ -30,6 +30,38 @@ namespace Tests
 			Assert.IsTrue( tbEx.nodes.Length >= 10 );
 		}
 
+		[TestMethod,
+		ExpectedException( typeof( ArgumentNullException ) )]
+		public void ReadNilKeyTest1()
+		{
+			var ta = new Table();
+			var x = ta[null];
+		}
+
+		[TestMethod,
+		ExpectedException( typeof( ArgumentNullException ) )]
+		public void ReadNilKeyTest2()
+		{
+			var ta = new Table();
+			var x = ta[new LuaStr()];
+		}
+
+		[TestMethod,
+		ExpectedException( typeof( ArgumentNullException ) )]
+		public void WriteNilKeyTest1()
+		{
+			var ta = new Table();
+			ta[null] = 4;
+		}
+
+		[TestMethod,
+		ExpectedException( typeof( ArgumentNullException ) )]
+		public void WriteNilKeyTest2()
+		{
+			var ta = new Table();
+			ta[new LuaStr()] = 4;
+		}
+
 		[TestMethod]
 		public void AddAndGetBoolKey()
 		{
@@ -37,41 +69,20 @@ namespace Tests
 
 			Assert.AreEqual( 0, ta.Count() );
 
-			var acc = new TableAccessor();
-			acc.Key.Set( true );
-			acc.Value.Set( 213 );
-
-			acc.RawSet( ta );
-
+			ta[true] = 213;
+			Assert.AreEqual( 213, ta[true] );
+			
 			Assert.AreEqual( 1, ta.Count() );
 
-			acc.Value.SetNil();
+			Assert.AreEqual( null, ta[false] );
 
-			acc.RawGet( ta );
+			Assert.AreEqual( 213, ta[true] );
 
-			Assert.AreEqual( 213, acc.Value.ToInt32() );
-
-			acc.Clear();
-
-			acc.Key.Set( false );
-			acc.RawGet( ta );
-
-			Assert.IsTrue( acc.Value.IsNil );
-
-			acc.Key.Set( true );
-			acc.RawGet( ta );
-
-			Assert.AreEqual( 213, acc.Value.ToInt32() );
-
-			acc.Value.SetNil();
-
-			acc.RawSet( ta );
+			ta[true] = null;
 
 			Assert.AreEqual( 0, ta.Count() );
 
-			acc.RawGet( ta );
-
-			Assert.IsTrue( acc.Value.IsNil );
+			Assert.AreEqual( null, ta[true] );
 		}
 
 		[TestMethod]
@@ -81,86 +92,80 @@ namespace Tests
 
 			Assert.AreEqual( 0, ta.Count() );
 
-			var acc = new TableAccessor();
-			acc.Key.Set( 0.525 );
-			acc.Value.Set( 213 );
+			ta[1] = 213;
 
-			acc.RawSet( ta );
-
+			Assert.AreEqual( 213, ta[1] );
 			Assert.AreEqual( 1, ta.Count() );
+			Assert.AreEqual( null, ta[Math.PI] );
+			Assert.AreEqual( 213, ta[1] );
 
-			acc.Value.SetNil();
-
-			acc.RawGet( ta );
-
-			Assert.AreEqual( 213, acc.Value.ToInt32() );
-
-			acc.Clear();
-
-			acc.Key.Set( false );
-			acc.RawGet( ta );
-
-			Assert.IsTrue( acc.Value.IsNil );
-
-			acc.Key.Set( 0.525 );
-			acc.RawGet( ta );
-
-			Assert.AreEqual( 213, acc.Value.ToInt32() );
-
-			acc.Value.SetNil();
-
-			acc.RawSet( ta );
+			ta[1] = null;
 
 			Assert.AreEqual( 0, ta.Count() );
+			Assert.AreEqual( null, ta[1] );
 
-			acc.RawGet( ta );
+			ta[Math.PI] = 213;
 
-			Assert.IsTrue( acc.Value.IsNil );
+			Assert.AreEqual( 213, ta[Math.PI] );
+			Assert.AreEqual( 1, ta.Count() );
+			Assert.AreEqual( null, ta[1] );
+			Assert.AreEqual( 213, ta[Math.PI] );
+
+			ta[Math.PI] = null;
+
+			Assert.AreEqual( 0, ta.Count() );
+			Assert.AreEqual( null, ta[Math.PI] );
 		}
 
 		[TestMethod]
 		public void AddAndGetStringKey()
 		{
+			var sa1 = new LuaStr( "A" );
+			var sa2 = new LuaStr( "A" );
+			var sb = new LuaStr( "B" );
+
 			var ta = new Table();
-			var str = new LuaStr( "Testing" );
 
 			Assert.AreEqual( 0, ta.Count() );
 
-			var acc = new TableAccessor();
-			acc.Key.Set( str );
-			acc.Value.Set( 213 );
+			ta[sa1] = 213;
 
-			acc.RawSet( ta );
-
+			Assert.AreEqual( 213, ta[sa1] );
+			Assert.AreEqual( 213, ta[sa2] );
 			Assert.AreEqual( 1, ta.Count() );
+			Assert.AreEqual( null, ta[sb] );
+			Assert.AreEqual( 213, ta[sa1] );
 
-			acc.Value.SetNil();
-
-			acc.RawGet( ta );
-
-			Assert.AreEqual( 213, acc.Value.ToInt32() );
-
-			acc.Clear();
-
-			acc.Key.Set( 58 );
-			acc.RawGet( ta );
-
-			Assert.IsTrue( acc.Value.IsNil );
-
-			acc.Key.Set( str );
-			acc.RawGet( ta );
-
-			Assert.AreEqual( 213, acc.Value.ToInt32() );
-
-			acc.Value.SetNil();
-
-			acc.RawSet( ta );
+			ta[sa1] = null;
 
 			Assert.AreEqual( 0, ta.Count() );
+			Assert.AreEqual( null, ta[sa1] );
 
-			acc.RawGet( ta );
+			ta[sb] = 2354;
 
-			Assert.IsTrue( acc.Value.IsNil );
+			Assert.AreEqual( 2354, ta[sb] );
+			Assert.AreEqual( 1, ta.Count() );
+			Assert.AreEqual( null, ta[sa2] );
+			Assert.AreEqual( 2354, ta[sb] );
+
+			ta[sb] = null;
+
+			Assert.AreEqual( 0, ta.Count() );
+			Assert.AreEqual( null, ta[sb] );
+		}
+
+		[TestMethod]
+		public void ManyStringsTest()
+		{
+			var ta = new Table();
+
+			const int max = 2048;
+
+			for( int i = 0; i < max; i++ )
+				ta[new LuaStr( string.Format( "str:{0}", i ) )] = i;
+
+			for( int i = 0; i < max; i++ )
+				Assert.AreEqual( i, ta[new LuaStr( string.Format( "str:{0}", i ) )] );
 		}
 
 		[TestMethod]
@@ -170,26 +175,15 @@ namespace Tests
 
 			Assert.AreEqual( 0, ta.Capacity );
 
-			var acc = new TableAccessor();
-
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i );
-				acc.Value.Set( i * 1.255 );
-				acc.RawSet( ta );
-			}
+				ta[i] = i * 1.255;
 
 			Assert.AreEqual( 31, ta.Count() );
 			Assert.AreEqual( 0, ta.NodeCapacity );
 			Assert.IsTrue( ta.ArrayCapacity > 31 );
 
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i );
-				acc.RawGet( ta );
-
-				Assert.AreEqual( i * 1.255, acc.Value.ToDouble() );
-			}
+				Assert.AreEqual( i * 1.255, ta[i] );
 		}
 
 		[TestMethod]
@@ -199,26 +193,15 @@ namespace Tests
 
 			Assert.AreEqual( 0, ta.Capacity );
 
-			var acc = new TableAccessor();
-
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i * Math.PI );
-				acc.Value.Set( i );
-				acc.RawSet( ta );
-			}
+				ta[i * Math.PI] = i;
 
 			Assert.AreEqual( 31, ta.Count() );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
 			Assert.IsTrue( ta.NodeCapacity > 31 );
 
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i * Math.PI );
-				acc.RawGet( ta );
-
-				Assert.AreEqual( (double)i, acc.Value.ToDouble() );
-			}
+				Assert.AreEqual( (double)i, ta[i * Math.PI] );
 		}
 
 		[TestMethod]
@@ -228,14 +211,8 @@ namespace Tests
 
 			Assert.AreEqual( 0, ta.Capacity );
 
-			var acc = new TableAccessor();
-
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i );
-				acc.Value.Set( i * 1.255 );
-				acc.RawSet( ta );
-			}
+				ta[i] = i * 1.255;
 
 			Assert.AreEqual( 31, ta.Count() );
 			Assert.AreEqual( 0, ta.NodeCapacity );
@@ -246,38 +223,21 @@ namespace Tests
 			for( int n = 0; n < 1000; n++ )
 			{
 				int i = (n * 23 + n) % 31 + 1;
-				
-				acc.Key.Set( i );
-				acc.RawGet( ta );
-
-				if( acc.Value.IsNil )
-					acc.Value.Set( n );
-				else
-					acc.Value.SetNil();
-
-				acc.RawSet( ta );
+				ta[i] = ta[i] == null ? (Value)n : null;
 			}
 
 			Assert.AreEqual( oldArrCap, ta.ArrayCapacity );
 			Assert.AreEqual( 0, ta.NodeCapacity );
 
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i );
-				acc.Value.SetNil();
-				acc.RawSet( ta );
-			}
+				ta[i] = null;
 
 			Assert.AreEqual( 0, ta.Count() );
 			Assert.AreEqual( oldArrCap, ta.ArrayCapacity );
 			Assert.AreEqual( 0, ta.NodeCapacity );
 
 			for( int i = 1; i <= 12; i++ )
-			{
-				acc.Key.Set( i );
-				acc.Value.Set( i );
-				acc.RawSet( ta );
-			}
+				ta[i] = i;
 
 			Assert.AreEqual( 12, ta.Count() );
 			Assert.AreEqual( oldArrCap, ta.ArrayCapacity );
@@ -291,14 +251,8 @@ namespace Tests
 
 			Assert.AreEqual( 0, ta.Capacity );
 
-			var acc = new TableAccessor();
-
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i * Math.PI );
-				acc.Value.Set( i * 1.255 );
-				acc.RawSet( ta );
-			}
+				ta[i * Math.PI] = i * 1.255;
 
 			Assert.AreEqual( 31, ta.Count() );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
@@ -309,41 +263,21 @@ namespace Tests
 			for( int n = 0; n < 1000; n++ )
 			{
 				int i = (n * 23 + n) % 31 + 1;
-
-				acc.Key.Set( i * Math.PI );
-				acc.RawGet( ta );
-
-				if( acc.Value.IsNil )
-					acc.Value.Set( n );
-				else
-					acc.Value.SetNil();
-
-				acc.RawSet( ta );
+				ta[i * Math.PI] = ta[i * Math.PI] == null ? (Value)n : null;
 			}
 
-			//Assert.AreEqual( oldNodeCap, ta.NodeCapacity );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
 
 			for( int i = 1; i <= 31; i++ )
-			{
-				acc.Key.Set( i * Math.PI );
-				acc.Value.SetNil();
-				acc.RawSet( ta );
-			}
+				ta[i * Math.PI] = null;
 
 			Assert.AreEqual( 0, ta.Count() );
-			//Assert.AreEqual( oldNodeCap, ta.NodeCapacity );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
 
 			for( int i = 1; i <= 12; i++ )
-			{
-				acc.Key.Set( i * Math.PI );
-				acc.Value.Set( i );
-				acc.RawSet( ta );
-			}
+				ta[i * Math.PI] = i;
 
 			Assert.AreEqual( 12, ta.Count() );
-			//Assert.AreEqual( oldNodeCap, ta.NodeCapacity );
 			Assert.IsTrue( ta.NodeCapacity <= oldNodeCap * 2 );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
 		}
@@ -354,60 +288,32 @@ namespace Tests
 			var strs = new LuaStr[256];
 			for( int i = 0; i < strs.Length; i++ )
 				strs[i] = new LuaStr( string.Format( "str:{0}", i ) );
-			
+
 			var ta = new Table();
 
-			var acc = new TableAccessor();
+			ta[Math.E] = Math.PI;
 
-			acc.Key.Set( Math.E );
-			acc.Value.Set( Math.PI );
-			acc.RawSet( ta );
-
-			for( int n = 0; n < 4096; n++ )
+			for( int n = 0; n < 4096 * 4; n++ )
 			{
 				int i = 1 + ((n * 17) % 13) * ((n * 13) % 17);
-
-				acc.Key.Set( i );
-				acc.RawGet( ta );
-
-				if( acc.Value.IsNil )
-					acc.Value.Set( n );
-				else
-					acc.Value.SetNil();
-
-				acc.RawSet( ta );
+				ta[i] = ta[i] == null ? (Value)n : null;
 
 				int j = 1 + (((n - 5) * 17) % 13) * (((n + 3) * 13) % 17);
-
-				acc.Key.Set( j * Math.PI );
-				acc.RawGet( ta );
-
-				if( acc.Value.IsNil )
-					acc.Value.Set( n );
-				else
-					acc.Value.SetNil();
-
-				acc.RawSet( ta );
+				
+				var jKey = j * Math.PI;
+				ta[jKey] = ta[jKey] == null ? (Value)n : null;
+				
+				var sjKey = new LuaStr( string.Format( "jKey:{0}", j ) );
+				ta[sjKey] = ta[sjKey] == null ? (Value)n : null;
 
 				if( n % 10 == 0 )
 				{
 					var s = strs[n % strs.Length];
-					acc.Key.Set( s );
-
-					acc.RawGet( ta );
-					if( acc.Value.IsNil )
-						acc.Value.Set( n );
-					else
-						acc.Value.SetNil();
-
-					acc.RawSet( ta );
+					ta[s] = ta[s] == null ? (Value)n : null;
 				}
 			}
 
-			acc.Key.Set( Math.E );
-			acc.RawGet( ta );
-
-			Assert.AreEqual( Math.PI, acc.Value.ToDouble() );
+			Assert.AreEqual( Math.PI, ta[Math.E] );
 		}
 	}
 }

@@ -26,6 +26,11 @@ namespace LuaSharp
 	internal sealed class NumBox
 	{
 		public double Value;
+
+		public NumBox()
+		{
+		}
+
 		public NumBox( double value )
 		{
 			this.Value = value;

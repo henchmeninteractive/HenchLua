@@ -126,7 +126,7 @@ namespace LuaSharp
 
 			for( int i = 0; i < a.Length; i++ )
 			{
-				if( a[i] != b[1] )
+				if( a[i] != b[i] )
 					return false;
 			}
 

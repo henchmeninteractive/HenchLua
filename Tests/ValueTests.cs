@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using LuaSharp;
+using LuaStr = LuaSharp.String;
 
 namespace Tests
 {
@@ -46,6 +47,17 @@ namespace Tests
 			val.Set( false );
 			Assert.IsFalse( val.ToBool() );
 			Assert.IsFalse( (bool)val );
+
+			val.Set( 0 );
+			Assert.IsTrue( val.ToBool() );
+		}
+
+		[TestMethod,
+		ExpectedExceptionAttribute( typeof( InvalidCastException ) )]
+		public void ExplicitBoolThrow()
+		{
+			Value val = 0;
+			Assert.IsTrue( (bool)val );
 		}
 
 		[TestMethod]
@@ -71,6 +83,41 @@ namespace Tests
 
 			val.Set( Math.PI );
 			Assert.AreEqual( Math.PI, val.ToDouble() );
+
+			for( int i = 0; i < 2048; i++ )
+			{
+				var nipi = i * Math.PI;
+				Value vipi = nipi;
+
+				Assert.AreEqual( nipi, vipi );
+				Assert.AreEqual( nipi, vipi.ToDouble() );
+				Assert.AreEqual( nipi, (double)vipi );
+			}
+		}
+
+		[TestMethod]
+		public void Strings()
+		{
+			var a1 = new LuaStr( "A" );
+			var a2 = new LuaStr( "A" );
+			var b = new LuaStr( "B" );
+
+			Value va1 = a1;
+			Value va2 = a2;
+			Value vb = b;
+
+			Assert.IsTrue( va1.Equals( a1 ) );
+			Assert.IsTrue( va1.Equals( a2 ) );
+			Assert.IsFalse( va1.Equals( b ) );
+
+			Assert.IsTrue( Value.Equals( va1, va2 ) );
+			Assert.IsFalse( Value.Equals( va1, vb ) );
+
+			Assert.IsTrue( va1.Equals( va2 ) );
+			Assert.IsFalse( va1.Equals( vb ) );
+
+			Assert.AreEqual( va1, va2 );
+			Assert.AreNotEqual( va1, vb );
 		}
 	}
 }
