@@ -43,9 +43,9 @@ namespace LuaSharp
 		}
 
 		String source;
+#endif
 
 		private int startLine, endLine;
-#endif
 
 		internal static Proto Load( BinaryReader reader )
 		{
@@ -110,7 +110,7 @@ namespace LuaSharp
 			}
 
 			//debug info
-
+#if DEBUG_API
 			var source = LoadString( reader );
 			
 			int numLineInfos = reader.ReadInt32();
@@ -133,14 +133,27 @@ namespace LuaSharp
 
 			for( int i = 0; i < numUpValueInfos; i++ )
 				upValues[i].Name = LoadString( reader );
+#else
+			SkipString( reader ); //source
+			int numLineInfos = reader.ReadInt32();
+			reader.BaseStream.Seek( numLineInfos * 4, SeekOrigin.Current );
+			int numLocalVars = reader.ReadInt32();
+			for( int i = 0; i < numLocalVars; i++ )
+			{
+				SkipString( reader );
+				reader.BaseStream.Seek( 8, SeekOrigin.Current );
+			}
+			int numUpValueInfos = reader.ReadInt32();
+			if( numUpValueInfos > numUpValues )
+				throw new InvalidDataException( "Too much debug info." );
+			for( int i = 0; i < numUpValueInfos; i++ )
+				SkipString( reader );
+#endif
 
 			//and done!
 
 			return new Proto()
 			{
-				startLine = lineDefined,
-				endLine = lastLineDefined,
-
 				NumParams = numParams,
 				HasVarArgs = hasVarArgs,
 				MaxStack = maxStack,
@@ -151,9 +164,14 @@ namespace LuaSharp
 
 				UpValues = upValues,
 
+				startLine = lineDefined,
+				endLine = lastLineDefined,
+
+#if DEBUG_API
 				source = source,
 				lineInfo = lineInfos,
 				localVars = localVars,
+#endif
 			};
 		}
 
@@ -169,6 +187,12 @@ namespace LuaSharp
 			var buf = String.InternalAllocBuffer( (int)len );
 			reader.BaseStream.Read( buf, String.BufferDataOffset, (int)len );
 			return String.InternalFinishBuffer( buf );
+		}
+
+		private static void SkipString( BinaryReader reader )
+		{
+			var len = reader.ReadUInt32();
+			reader.BaseStream.Seek( len, SeekOrigin.Current );
 		}
 
 		private struct LoadState
