@@ -65,66 +65,111 @@ namespace LuaSharp
 
 			//constants
 
+			Value[] constants;
+
 			var numConsts = reader.ReadInt32();
-			var constants = new Value[numConsts];
-			for( int i = 0; i < constants.Length; i++ )
+			if( numConsts != 0 )
 			{
-				var type = reader.ReadByte();
-				switch( type )
+				constants = new Value[numConsts];
+				for( int i = 0; i < constants.Length; i++ )
 				{
-				case 0: //nil
-					break;
+					var type = reader.ReadByte();
+					switch( type )
+					{
+					case 0: //nil
+						break;
 
-				case 1: //bool
-					constants[i].Set( reader.ReadByte() != 0 );
-					break;
+					case 1: //bool
+						constants[i].Set( reader.ReadByte() != 0 );
+						break;
 
-				case 3: //number
-					constants[i].Set( reader.ReadDouble() );
-					break;
+					case 3: //number
+						constants[i].Set( reader.ReadDouble() );
+						break;
 
-				case 4: //string
-					constants[i].Set( LoadString( reader ) );
-					break;
+					case 4: //string
+						constants[i].Set( LoadString( reader ) );
+						break;
 
-				default:
-					throw new InvalidDataException( "Invalid constant type." );
+					default:
+						throw new InvalidDataException( "Invalid constant type." );
+					}
 				}
+			}
+			else
+			{
+				constants = null;
 			}
 
 			//inner functions
 
+			Proto[] innerProtos;
+
 			int numInnerProtos = reader.ReadInt32();
-			var innerProtos = new Proto[numInnerProtos];
-			for( int i = 0; i < innerProtos.Length; i++ )
-				innerProtos[i] = Load( reader );
+			if( numInnerProtos != 0 )
+			{
+				innerProtos = new Proto[numInnerProtos];
+				for( int i = 0; i < innerProtos.Length; i++ )
+					innerProtos[i] = Load( reader );
+			}
+			else
+			{
+				innerProtos = null;
+			}
 
 			//upvalues
 
+			UpValDesc[] upValues;
+
 			int numUpValues = reader.ReadInt32();
-			var upValues = new UpValDesc[numUpValues];
-			for( int i = 0; i < upValues.Length; i++ )
+			if( numUpValues != 0 )
 			{
-				upValues[i].InStack = reader.ReadByte() != 0;
-				upValues[i].Index = reader.ReadByte();
+				upValues = new UpValDesc[numUpValues];
+				for( int i = 0; i < upValues.Length; i++ )
+				{
+					upValues[i].InStack = reader.ReadByte() != 0;
+					upValues[i].Index = reader.ReadByte();
+				}
+			}
+			else
+			{
+				upValues = null;
 			}
 
 			//debug info
 #if DEBUG_API
 			var source = LoadString( reader );
-			
+
+			int[] lineInfos;
+
 			int numLineInfos = reader.ReadInt32();
-			var lineInfos = new int[numLineInfos];
-			for( int i = 0; i < lineInfos.Length; i++ )
-				lineInfos[i] = reader.ReadInt32();
+			if( numLineInfos != 0 )
+			{
+				lineInfos = new int[numLineInfos];
+				for( int i = 0; i < lineInfos.Length; i++ )
+					lineInfos[i] = reader.ReadInt32();
+			}
+			else
+			{
+				lineInfos = null;
+			}
+
+			LocalVarDesc[] localVars;
 
 			int numLocalVars = reader.ReadInt32();
-			var localVars = new LocalVarDesc[numLocalVars];
-			for( int i = 0; i < numLocalVars; i++ )
+			if( numLocalVars != 0 )
 			{
-				localVars[i].Name = LoadString( reader );
-				localVars[i].StartPC = reader.ReadInt32();
-				localVars[i].endPC = reader.ReadInt32();
+				localVars = new LocalVarDesc[numLocalVars];
+				for( int i = 0; i < numLocalVars; i++ )
+				{
+					localVars[i].Name = LoadString( reader );
+					localVars[i].StartPC = reader.ReadInt32();
+					localVars[i].endPC = reader.ReadInt32();
+				}
+			}
+			else
+			{
+				localVars = null;
 			}
 
 			int numUpValueInfos = reader.ReadInt32();
