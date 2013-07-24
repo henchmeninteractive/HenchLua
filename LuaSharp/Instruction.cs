@@ -58,6 +58,14 @@ namespace LuaSharp
 			set { SetField( value, BxShift, BxMask ); }
 		}
 
+		private const int SBxMax = (BxMask >> 1);
+
+		public int SBx
+		{
+			get { return Bx - SBxMax; }
+			set { Bx = value + SBxMax; }			
+		}
+
 		private const int AxShift = 6;
 		private const int AxMask = 0x3FFFFFF;
 
@@ -72,6 +80,10 @@ namespace LuaSharp
 			Debug.Assert( (value & ~mask) == 0 );
 			PackedValue = (uint)(PackedValue & ~(mask << shift)) | (uint)(value << shift);
 		}
+
+		internal const int BitK = 1 << 8;
+
+		internal const int FieldsPerFlush = 50;
 	}
 
 	/// <remarks>
@@ -209,25 +221,40 @@ namespace LuaSharp
 		/// <summary>
 		/// A B C, if( (RK[B] == RK[C]) != A ) -> pc++
 		/// </summary>
+		/// <remarks>
+		/// A Jmp must follow.
+		/// </remarks>
 		Eq,
 		
 		/// <summary>
 		/// A B C, if( (RK[B] &lt; RK[C]) != A ) -> pc++
 		/// </summary>
+		/// <remarks>
+		/// A Jmp must follow.
+		/// </remarks>
 		Lt,
 
 		/// <summary>
 		/// A B C, if( (RK[B] &lt;= RK[C]) != A ) -> pc++
 		/// </summary>
+		/// <remarks>
+		/// A Jmp must follow.
+		/// </remarks>
 		Le,
 
 		/// <summary>
-		/// A C, if( (bool)R[A] != A ) -> pc++
+		/// A C, if( (bool)R[A] != C ) -> pc++
 		/// </summary>
+		/// <remarks>
+		/// A Jmp must follow.
+		/// </remarks>
 		Test,
 		/// <summary>
 		/// A B C, if( (bool)R[B] == C ) -> R[A] = R[B] else pc++
 		/// </summary>
+		/// <remarks>
+		/// A Jmp must follow.
+		/// </remarks>
 		TestSet,
 
 		/// <summary>
