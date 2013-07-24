@@ -325,6 +325,9 @@ namespace LuaSharp.Tests
 			var arrBox = Helpers.Expose( taEx.array.GetValue( 0 ) ).Val;
 			var nodBox = Helpers.Expose( Helpers.Expose( taEx.nodes.GetValue( 0 ) ).Value ).Val;
 
+			Assert.AreEqual( 1, Helpers.Expose( arrBox ).Value );
+			Assert.AreEqual( 1, Helpers.Expose( nodBox ).Value );
+
 			for( int i = 2; i < 20; i++ )
 			{
 				ta[1] = i;
@@ -335,6 +338,9 @@ namespace LuaSharp.Tests
 
 				Assert.IsTrue( object.ReferenceEquals( arrBox, arrBox2 ) );
 				Assert.IsTrue( object.ReferenceEquals( nodBox, nodBox2 ) );
+
+				Assert.AreEqual( i, Helpers.Expose( arrBox ).Value );
+				Assert.AreEqual( i, Helpers.Expose( nodBox ).Value );
 			}
 		}
 	}
