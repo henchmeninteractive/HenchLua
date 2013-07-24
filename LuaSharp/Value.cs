@@ -20,10 +20,13 @@ namespace LuaSharp
 		Table,
 		UserData,
 		Function,
+		Thread,
 	}
 
 	public struct Value
 	{
+		public static readonly Value Nil;
+
 		internal object RefVal;
 		internal double NumVal;
 
@@ -51,6 +54,9 @@ namespace LuaSharp
 
 				if( Callable.IsCallable( RefVal ) )
 					return ValueType.Function;
+
+				if( RefVal is Thread )
+					return ValueType.Thread;
 
 				return ValueType.UserData;
 			}
@@ -89,6 +95,12 @@ namespace LuaSharp
 		}
 
 		public Value( Table value )
+		{
+			RefVal = value;
+			NumVal = 0;
+		}
+
+		public Value( Thread value )
 		{
 			RefVal = value;
 			NumVal = 0;
@@ -134,6 +146,11 @@ namespace LuaSharp
 		}
 
 		public static implicit operator Value( Table value )
+		{
+			return new Value( value );
+		}
+
+		public static implicit operator Value( Thread value )
 		{
 			return new Value( value );
 		}
@@ -186,15 +203,31 @@ namespace LuaSharp
 		{
 			RefVal = value;
 		}
+		
+		public void Set( Thread value )
+		{
+			RefVal = value;
+		}
 
 		public void Set( Callable value )
 		{
 			RefVal = value.Val;
 		}
 
+		public void Set( Value value )
+		{
+			this = value;
+		}
+
 		public void Set( object value )
 		{
-			if( value is ValueType )
+			if( value == null )
+			{
+				RefVal = null;
+				return;
+			}
+
+			if( value.GetType().IsValueType )
 			{
 				//the slow case
 				SetFromValueType( value );
@@ -209,6 +242,13 @@ namespace LuaSharp
 
 		private void SetFromValueType( object value )
 		{
+			//the quick check
+			if( value is Value )
+			{
+				this = (Value)value;
+				return;
+			}
+
 			//core types first
 
 			if( value is bool )
@@ -307,6 +347,14 @@ namespace LuaSharp
 		}
 
 		/// <summary>
+		/// Returns the value as a table (if it is a table, else returns null).
+		/// </summary>
+		public Thread ToThread()
+		{
+			return RefVal as Thread;
+		}
+
+		/// <summary>
 		/// Gets the value as userdata (if it is userdata, else returns nil).
 		/// Note that builtin types don't count as userdata.
 		/// </summary>
@@ -379,6 +427,11 @@ namespace LuaSharp
 		public static explicit operator Table( Value value )
 		{
 			return (Table)value.RefVal;
+		}
+
+		public static explicit operator Thread( Value value )
+		{
+			return (Thread)value.RefVal;
 		}
 
 		#endregion
@@ -614,7 +667,7 @@ namespace LuaSharp
 			Val = value.InternalData;
 		}
 
-		public void Set( Value value )
+		public void Set( ref Value value )
 		{
 			if( value.RefVal == Value.NumTypeTag )
 				Set( value.NumVal );

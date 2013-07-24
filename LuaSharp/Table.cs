@@ -24,7 +24,7 @@ namespace LuaSharp
 			Resize( numArraySlots, numNodes );
 		}
 
-		private CompactValue[] array;
+		internal CompactValue[] array;
 		
 		private Node[] nodes;
 		private int lastFreeNode;
@@ -264,24 +264,35 @@ namespace LuaSharp
 			return true;
 		}
 
-		/// <summary>
-		/// Note: take care to avoid aliasing val - the table copies it in.
-		/// </summary>
-		internal void WriteValue( int loc, CompactValue val )
+		internal void WriteValue( int loc, ref Value val )
 		{
 			Debug.Assert( loc != 0 );
 
+			var rVal = val.RefVal;
+
+			if( rVal == Value.NumTypeTag )
+			{
+				//reuse an existing box if we can
+
+				var box = (loc > 0 ? array[loc - 1].Val : nodes[-loc - 1].Value.Val) as NumBox;
+				if( box == null )
+					box = new NumBox();
+				box.Value = val.NumVal;
+				
+				rVal = box;
+			}
+
 			if( loc > 0 )
 			{
-				array[loc - 1] = val;
+				array[loc - 1].Val = rVal;
 			}
 			else
 			{
 				loc = -loc - 1;
 
-				nodes[loc].Value = val;
+				nodes[loc].Value.Val = rVal;
 
-				if( val.Val == null )
+				if( rVal == null )
 					//don't have a GC to sweep up later,
 					//so we need to clear the key out now,
 					//but we can't break any chains!
@@ -289,13 +300,13 @@ namespace LuaSharp
 			}
 		}
 
-		internal void WriteValue( int loc, Value val )
-		{
-			WriteValue( loc, new CompactValue( val ) );
-		}
+		#region this[], RawGet, RawSet
 
-		#region this[]
-
+		/// <summary>
+		/// Gets or sets a value in the table.
+		/// This is a raw operation, it does
+		/// not invoke metatable methods.
+		/// </summary>
 		public Value this[Value key]
 		{
 			get
@@ -313,10 +324,15 @@ namespace LuaSharp
 				int loc = FindValue( key );
 				if( loc == 0 )
 					loc = InsertNewKey( new CompactValue( key ) );
-				WriteValue( loc, value );
+				WriteValue( loc, ref value );
 			}
 		}
 
+		/// <summary>
+		/// Gets or sets a value in the table.
+		/// This is a raw operation, it does
+		/// not invoke metatable methods.
+		/// </summary>
 		public Value this[int key]
 		{
 			get
@@ -334,10 +350,15 @@ namespace LuaSharp
 				int loc = FindValue( key );
 				if( loc == 0 )
 					loc = InsertNewKey( new CompactValue( key ) );
-				WriteValue( loc, value );
+				WriteValue( loc, ref value );
 			}
 		}
 
+		/// <summary>
+		/// Gets or sets a value in the table.
+		/// This is a raw operation, it does
+		/// not invoke metatable methods.
+		/// </summary>
 		public Value this[String key]
 		{
 			get
@@ -355,8 +376,62 @@ namespace LuaSharp
 				int loc = FindValue( key );
 				if( loc == 0 )
 					loc = InsertNewKey( new CompactValue( key ) );
-				WriteValue( loc, value );
+				WriteValue( loc, ref value );
 			}
+		}
+
+		public Value RawGet( Value key )
+		{
+			Value ret;
+
+			int loc = FindValue( key );
+			ReadValue( loc, out ret );
+
+			return ret;			
+		}
+
+		public void RawSet( Value key, Value value )
+		{
+			int loc = FindValue( key );
+			if( loc == 0 )
+				loc = InsertNewKey( new CompactValue( key ) );
+			WriteValue( loc, ref value );
+		}
+
+		public Value RawGet( int key )
+		{
+			Value ret;
+
+			int loc = FindValue( key );
+			ReadValue( loc, out ret );
+
+			return ret;
+		}
+
+		public void RawSet( int key, Value value )
+		{
+			int loc = FindValue( key );
+			if( loc == 0 )
+				loc = InsertNewKey( new CompactValue( key ) );
+			WriteValue( loc, ref value );
+		}
+
+		public Value RawGet( String key )
+		{
+			Value ret;
+
+			int loc = FindValue( key );
+			ReadValue( loc, out ret );
+
+			return ret;
+		}
+
+		public void RawSet( String key, Value value )
+		{
+			int loc = FindValue( key );
+			if( loc == 0 )
+				loc = InsertNewKey( new CompactValue( key ) );
+			WriteValue( loc, ref value );
 		}
 
 		#endregion
@@ -637,7 +712,11 @@ namespace LuaSharp
 					continue;
 
 				int loc = InsertNewKey( node.Key );
-				WriteValue( loc, node.Value );
+				
+				if( loc > 0 )
+					array[loc - 1] = node.Value;
+				else
+					nodes[-loc - 1].Value = node.Value;
 			}
 
 #if DEBUG

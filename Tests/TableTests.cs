@@ -32,7 +32,7 @@ namespace LuaSharp.Tests
 		public void ReadNilKeyTest1()
 		{
 			var ta = new Table();
-			var x = ta[null];
+			var x = ta[Value.Nil];
 		}
 
 		[TestMethod,
@@ -48,7 +48,7 @@ namespace LuaSharp.Tests
 		public void WriteNilKeyTest1()
 		{
 			var ta = new Table();
-			ta[null] = 4;
+			ta[Value.Nil] = 4;
 		}
 
 		[TestMethod,
@@ -71,15 +71,15 @@ namespace LuaSharp.Tests
 			
 			Assert.AreEqual( 1, ta.Count() );
 
-			Assert.AreEqual( null, ta[false] );
+			Assert.AreEqual( Value.Nil, ta[false] );
 
 			Assert.AreEqual( 213, ta[true] );
 
-			ta[true] = null;
+			ta[true] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
 
-			Assert.AreEqual( null, ta[true] );
+			Assert.AreEqual( Value.Nil, ta[true] );
 		}
 
 		[TestMethod]
@@ -93,25 +93,25 @@ namespace LuaSharp.Tests
 
 			Assert.AreEqual( 213, ta[1] );
 			Assert.AreEqual( 1, ta.Count() );
-			Assert.AreEqual( null, ta[Math.PI] );
+			Assert.AreEqual( Value.Nil, ta[Math.PI] );
 			Assert.AreEqual( 213, ta[1] );
 
-			ta[1] = null;
+			ta[1] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
-			Assert.AreEqual( null, ta[1] );
+			Assert.AreEqual( Value.Nil, ta[1] );
 
 			ta[Math.PI] = 213;
 
 			Assert.AreEqual( 213, ta[Math.PI] );
 			Assert.AreEqual( 1, ta.Count() );
-			Assert.AreEqual( null, ta[1] );
+			Assert.AreEqual( Value.Nil, ta[1] );
 			Assert.AreEqual( 213, ta[Math.PI] );
 
-			ta[Math.PI] = null;
+			ta[Math.PI] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
-			Assert.AreEqual( null, ta[Math.PI] );
+			Assert.AreEqual( Value.Nil, ta[Math.PI] );
 		}
 
 		[TestMethod]
@@ -130,25 +130,25 @@ namespace LuaSharp.Tests
 			Assert.AreEqual( 213, ta[sa1] );
 			Assert.AreEqual( 213, ta[sa2] );
 			Assert.AreEqual( 1, ta.Count() );
-			Assert.AreEqual( null, ta[sb] );
+			Assert.AreEqual( Value.Nil, ta[sb] );
 			Assert.AreEqual( 213, ta[sa1] );
 
-			ta[sa1] = null;
+			ta[sa1] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
-			Assert.AreEqual( null, ta[sa1] );
+			Assert.AreEqual( Value.Nil, ta[sa1] );
 
 			ta[sb] = 2354;
 
 			Assert.AreEqual( 2354, ta[sb] );
 			Assert.AreEqual( 1, ta.Count() );
-			Assert.AreEqual( null, ta[sa2] );
+			Assert.AreEqual( Value.Nil, ta[sa2] );
 			Assert.AreEqual( 2354, ta[sb] );
 
-			ta[sb] = null;
+			ta[sb] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
-			Assert.AreEqual( null, ta[sb] );
+			Assert.AreEqual( Value.Nil, ta[sb] );
 		}
 
 		[TestMethod]
@@ -220,14 +220,14 @@ namespace LuaSharp.Tests
 			for( int n = 0; n < 1000; n++ )
 			{
 				int i = (n * 23 + n) % 31 + 1;
-				ta[i] = ta[i] == null ? (Value)n : null;
+				ta[i] = ta[i].IsNil ? (Value)n : Value.Nil;
 			}
 
 			Assert.AreEqual( oldArrCap, ta.ArrayCapacity );
 			Assert.AreEqual( 0, ta.NodeCapacity );
 
 			for( int i = 1; i <= 31; i++ )
-				ta[i] = null;
+				ta[i] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
 			Assert.AreEqual( oldArrCap, ta.ArrayCapacity );
@@ -260,13 +260,13 @@ namespace LuaSharp.Tests
 			for( int n = 0; n < 1000; n++ )
 			{
 				int i = (n * 23 + n) % 31 + 1;
-				ta[i * Math.PI] = ta[i * Math.PI] == null ? (Value)n : null;
+				ta[i * Math.PI] = ta[i * Math.PI].IsNil ? (Value)n : Value.Nil;
 			}
 
 			Assert.AreEqual( 0, ta.ArrayCapacity );
 
 			for( int i = 1; i <= 31; i++ )
-				ta[i * Math.PI] = null;
+				ta[i * Math.PI] = Value.Nil;
 
 			Assert.AreEqual( 0, ta.Count() );
 			Assert.AreEqual( 0, ta.ArrayCapacity );
@@ -293,24 +293,49 @@ namespace LuaSharp.Tests
 			for( int n = 0; n < 4096 * 4; n++ )
 			{
 				int i = 1 + ((n * 17) % 13) * ((n * 13) % 17);
-				ta[i] = ta[i] == null ? (Value)n : null;
+				ta[i] = ta[i].IsNil ? (Value)n : Value.Nil;
 
 				int j = 1 + (((n - 5) * 17) % 13) * (((n + 3) * 13) % 17);
 				
 				var jKey = j * Math.PI;
-				ta[jKey] = ta[jKey] == null ? (Value)n : null;
+				ta[jKey] = ta[jKey].IsNil ? (Value)n : Value.Nil;
 				
 				var sjKey = new String( string.Format( "jKey:{0}", j ) );
-				ta[sjKey] = ta[sjKey] == null ? (Value)n : null;
+				ta[sjKey] = ta[sjKey].IsNil ? (Value)n : Value.Nil;
 
 				if( n % 10 == 0 )
 				{
 					var s = strs[n % strs.Length];
-					ta[s] = ta[s] == null ? (Value)n : null;
+					ta[s] = ta[s].IsNil ? (Value)n : Value.Nil;
 				}
 			}
 
 			Assert.AreEqual( Math.PI, ta[Math.E] );
+		}
+
+		[TestMethod]
+		public void ReuseNumBoxes()
+		{
+			var ta = new Table( 1, 1 );
+			var taEx = ta.Expose();
+
+			ta[1] = 1;
+			ta[Math.PI] = 1;
+
+			var arrBox = Helpers.Expose( taEx.array.GetValue( 0 ) ).Val;
+			var nodBox = Helpers.Expose( Helpers.Expose( taEx.nodes.GetValue( 0 ) ).Value ).Val;
+
+			for( int i = 2; i < 20; i++ )
+			{
+				ta[1] = i;
+				ta[Math.PI] = i;
+
+				var arrBox2 = Helpers.Expose( taEx.array.GetValue( 0 ) ).Val;
+				var nodBox2 = Helpers.Expose( Helpers.Expose( taEx.nodes.GetValue( 0 ) ).Value ).Val;
+
+				Assert.IsTrue( object.ReferenceEquals( arrBox, arrBox2 ) );
+				Assert.IsTrue( object.ReferenceEquals( nodBox, nodBox2 ) );
+			}
 		}
 	}
 }
