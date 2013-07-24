@@ -42,5 +42,11 @@ namespace LuaSharp
 
 			return ret;
 		}
+
+		public static int FbToInt( int x )
+		{
+			int e = (x >> 3) & 0x1f;
+			return e == 0 ? x : ((x & 7) + 8) << (e - 1);
+		}
 	}
 }

@@ -42,6 +42,9 @@ namespace LuaSharp
 
 			var proto = Proto.Load( reader );
 
+			if( proto.UpValues == null )
+				return proto;
+
 			throw new NotImplementedException();
 		}
 
@@ -131,5 +134,11 @@ namespace LuaSharp
 				return (byte)b;
 			}
 		}
+	}
+
+	internal class Closure : Function
+	{
+		internal Proto Proto;
+		internal Value[] UpValues;
 	}
 }
