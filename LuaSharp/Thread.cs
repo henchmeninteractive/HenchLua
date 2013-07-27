@@ -10,18 +10,51 @@ namespace LuaSharp
 {
 	public class Thread
 	{
-		private Value[] stack;
+		/// <summary>
+		/// The minimum amount of stack space available
+		/// to C functions when they're called.
+		/// </summary>
+		public const int MinStack = 20;
+
+		private Value[] stack = new Value[MinStack * 2];
 		private int stackTop;
 
 		public struct StackOps
 		{
 			private Thread owner;
 
+			internal StackOps( Thread owner )
+			{
+				this.owner = owner;
+			}
+
 			public int Top
 			{
 				get { return owner.stackTop - owner.call.StackBase; }
 			}
+
+			public void CheckSpace( int spaceNeeded )
+			{
+				if( spaceNeeded < 0 )
+					throw new ArgumentOutOfRangeException( "spaceNeeded" );
+
+				int minLen = owner.stackTop + spaceNeeded;
+
+				if( owner.stack.Length < minLen )
+				{
+					int growLen = owner.stack.Length;
+					growLen = growLen < 256 ? growLen * 2 : growLen + MinStack;
+					Array.Resize( ref owner.stack, Math.Max( growLen, minLen ) );
+				}
+			}
+
+			public void Push( Value value )
+			{
+				owner.stack[owner.stackTop++] = value;
+			}
 		}
+
+		public StackOps Stack { get { return new StackOps( this ); } }
 
 		private CallInfo call; //the top of the call stack
 		private CallInfo[] callInfos; //the rest of the call stack
@@ -31,6 +64,10 @@ namespace LuaSharp
 		{
 			public int StackBase;
 			public int Top;
+
+			/// <summary>
+			/// The currently executing op.
+			/// </summary>
 			public int PC;
 
 			public object Callable;
@@ -58,7 +95,7 @@ namespace LuaSharp
 			var code = proto.Code;
 			var consts = proto.Constants;
 
-			for( int pc = call.PC; pc < code.Length; pc++ )
+			for( int pc = call.PC; pc < code.Length; call.PC = ++pc )
 			{
 				var op = code[pc];
 
@@ -96,8 +133,7 @@ namespace LuaSharp
 					break;
 
 				case OpCode.GetUpValue:
-					//ToDo: handle lifted upvalues
-					stack[stackBase + op.A] = upValues[op.B];
+					ReadUpValue( ref upValues[op.B], out stack[stackBase + op.A] );
 					break;
 
 				case OpCode.GetUpValueTable:
@@ -107,7 +143,10 @@ namespace LuaSharp
 							consts[c & ~Instruction.BitK] :
 							stack[stackBase + c];
 
-						var table = (Table)upValues[op.B].RefVal;
+						Value upVal;
+						ReadUpValue( ref upValues[op.B], out upVal );
+
+						var table = (Table)upVal.RefVal;
 						GetTable( table, ref key, out stack[stackBase + op.A] );
 					}
 					break;
@@ -136,14 +175,16 @@ namespace LuaSharp
 							consts[c & ~Instruction.BitK] :
 							stack[stackBase + c];
 
-						SetTable( upValues[op.A].RefVal,
-							ref key, ref value );
+						Value upVal;
+						ReadUpValue( ref upValues[op.B], out upVal );
+
+						var table = (Table)upVal.RefVal;
+						SetTable( table, ref key, ref value );
 					}
 					break;
 
 				case OpCode.SetUpValue:
-					//ToDo: handle lifted upvalues
-					upValues[op.B] = stack[stackBase + op.A];
+					WriteUpValue( ref upValues[op.B], ref stack[stackBase + op.A] );
 					break;
 
 				case OpCode.SetTable:
@@ -328,7 +369,7 @@ namespace LuaSharp
 					{
 						var a = op.A;
 						if( a != 0 )
-							CloseUpValues( stackBase + a + 1 );
+							CloseUpValues( stackBase + a - 1 );
 						pc += op.SBx;
 					}
 					break;
@@ -537,7 +578,9 @@ namespace LuaSharp
 					break;
 
 				case OpCode.Closure:
-					throw new NotImplementedException();
+					stack[stackBase + op.A].RefVal =
+						CreateClosure( proto.InnerProtos[op.Bx], upValues );
+					break;
 
 				case OpCode.Vararg:
 					throw new NotImplementedException();
@@ -588,12 +631,115 @@ namespace LuaSharp
 			throw new NotImplementedException();
 		}
 
+		private void ReadUpValue( ref Value upVal, out Value ret )
+		{
+			if( upVal.RefVal == Value.OpenUpValueTag )
+			{
+				ret = stack[(int)upVal.NumVal];
+				return;
+			}
+
+			var asClosed = upVal.RefVal as ValueBox;
+			if( asClosed != null )
+			{
+				ret = asClosed.Value;
+				return;
+			}
+
+			//simple value
+			ret = upVal;
+		}
+
+		private void WriteUpValue( ref Value upVal, ref Value value )
+		{
+			if( upVal.RefVal == Value.OpenUpValueTag )
+			{
+				stack[(int)upVal.NumVal] = value;
+				return;
+			}
+
+			var asClosed = upVal.RefVal as ValueBox;
+			if( asClosed != null )
+			{
+				asClosed.Value = value;
+				return;
+			}
+
+			//simple value
+			upVal = value;
+		}
+
+		private struct OpenUpValue
+		{
+			public Value[] storage;
+			public int Index;
+		}
+
+
+
+		internal void RegisterOpenUpvalue( Value[] storage, int index )
+		{
+			throw new NotImplementedException();
+		}
+
 		/// <summary>
-		/// Closes all upvalues at locations >= index.
+		/// Closes all open upvalues pointing to stack locations >= index.
 		/// </summary>
 		private void CloseUpValues( int index )
 		{
 			throw new NotImplementedException();
+		}
+
+		private Function CreateClosure( Proto proto, Value[] parentUpValues )
+		{
+			var stackBase = call.StackBase;
+
+			var upValDesc = proto.UpValues;
+			if( upValDesc == null )
+				//we don't wrap simple protos in full closures
+				return proto;
+
+			var upValues = new Value[upValDesc.Length];
+			for( int i = 0; i < upValDesc.Length; i++ )
+			{
+				var desc = upValDesc[i];
+				if( desc.InStack )
+				{
+					//create an open upvalue
+					upValues[i].RefVal = Value.OpenUpValueTag;
+					upValues[i].NumVal = stackBase + desc.Index;
+
+					RegisterOpenUpvalue( upValues, i );
+				}
+				else
+				{
+					//point at a parent upvalue
+					var parentVal = parentUpValues[desc.Index];
+
+					var asClosed = parentVal.RefVal as ValueBox;
+					if( asClosed == null )
+					{
+						//we need to force the value closed
+
+						if( parentVal.RefVal == Value.OpenUpValueTag )
+						{
+							//convert an open upval to a simple value
+
+							parentVal = stack[(int)parentVal.NumVal];
+							//unmark it here or just skip it later?
+						}
+
+						//conver the simple value to a fully closed upvalue
+
+						asClosed = new ValueBox( parentVal );
+						parentUpValues[desc.Index].RefVal = asClosed;
+					}
+
+					upValues[i].RefVal = asClosed;
+				}
+			}
+
+			return new Closure() { Proto = proto, UpValues = upValues };
 		}
 	}
 }

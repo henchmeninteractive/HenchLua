@@ -6,14 +6,16 @@ namespace LuaSharp.Tests
 	[TestClass]
 	public class ProtoTests
 	{
-		[TestMethod,
-		ExpectedException( typeof( NotImplementedException ) )]
+		[TestMethod]
 		public void LoadBinary()
 		{
 			Function func;
 
 			using( var script = Helpers.LoadScript( "test.luab" ) )
-				func = Function.Load( script );
+				func = Function.Load( script, null );
+
+			Assert.AreNotEqual( null, func );
+			Assert.AreEqual( "Closure", func.GetType().Name );
 		}
 	}
 }

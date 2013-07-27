@@ -30,7 +30,17 @@ namespace LuaSharp
 		internal object RefVal;
 		internal double NumVal;
 
+		/// <summary>
+		/// Numbers are represented with RefVal == NumTypeTag
+		/// and NumVal == the numeric value.
+		/// </summary>
 		internal static readonly object NumTypeTag = new object();
+		/// <summary>
+		/// Open upvalues (and these should only be seen in upvalue
+		/// arrays in closures!) are represented with RefVal == OpenUpValueTag
+		/// and NumVal == the stack index it points to.
+		/// </summary>
+		internal static readonly object OpenUpValueTag = new object();
 
 		public ValueType ValueType
 		{

@@ -11,7 +11,7 @@ namespace LuaSharp
 {
 	public abstract class Function
 	{
-		public static Function Load( Stream byteCode )
+		public static Function Load( Stream byteCode, Table globals )
 		{
 			if( byteCode == null )
 				throw new ArgumentNullException( "byteCode" );
@@ -45,7 +45,10 @@ namespace LuaSharp
 			if( proto.UpValues == null )
 				return proto;
 
-			throw new NotImplementedException();
+			if( proto.UpValues.Length != 1 )
+				throw new InvalidBytecodeException( "Chunks can't have more than one upvalue." );
+
+			return new Closure() { Proto = proto, UpValues = new Value[] { globals } };
 		}
 
 		private struct Header
@@ -139,6 +142,37 @@ namespace LuaSharp
 	internal class Closure : Function
 	{
 		internal Proto Proto;
+
+		/// <summary>
+		/// Upvalues are specially encoded. They have three forms:
+		/// 
+		/// The first form is the open form. In the open form the upvalue
+		/// points at a slot on the stack. These are represented by Values
+		/// where RefVal == OpenUpValueTag, and NumVal == the stack index.
+		/// 
+		/// The second form is the closed form. These are long-lived upvalues
+		/// which are boxed. They're Values where RefVal is a ValueBox.
+		/// 
+		/// The last form is as simple values.
+		/// 
+		/// Open upvalues must be registered with the thread whose stack they
+		/// point at. Copying an open upvalue (when constructing a new closure)
+		/// creates another, identical, open upvalue, which must also be registerd
+		/// with the thread.
+		/// 
+		/// Copying a closed upvalue simply copies the variable. The .NET GC
+		/// can handle the rest.
+		/// 
+		/// Copying a simple value promotes the simple value to a closed upvalue,
+		/// and then proceeds as though it's a normal copy of a closed upvalue.
+		/// This is because both upvalues are conceptually the same object, and we
+		/// can't just mutate the value, in case it changes.
+		/// 
+		/// There is one final case: when closing an open upvalue to which no
+		/// other upvalues point, we can convert it to a simple value rather
+		/// than to a full closed upvalue. This can alleviate some allocation
+		/// overhead when functions construct closures that capture their arguments.
+		/// </summary>
 		internal Value[] UpValues;
 	}
 }
