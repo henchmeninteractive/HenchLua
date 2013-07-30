@@ -11,7 +11,7 @@ namespace LuaSharp.Tests
 		{
 			Function func;
 
-			using( var script = Helpers.LoadScript( "test.luab" ) )
+			using( var script = Helpers.LoadByteCode( "test.luab" ) )
 				func = Function.Load( script, null );
 
 			Assert.AreNotEqual( null, func );

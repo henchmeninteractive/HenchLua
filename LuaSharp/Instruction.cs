@@ -84,6 +84,99 @@ namespace LuaSharp
 		internal const int BitK = 1 << 8;
 
 		internal const int FieldsPerFlush = 50;
+
+		public override string ToString()
+		{
+			var ret = new StringBuilder();
+
+			ret.Append( OpCode.ToString() );
+
+			switch( OpCode )
+			{
+			case OpCode.Move:
+				ret.AppendFormat( ": R{0} = R{1}", A, B );
+				break;
+
+			case OpCode.LoadBool:
+				ret.AppendFormat( ": R{0} = {1}", A, B != 0 );
+				if( C != 0 )
+					ret.Append( "; PC++" );
+				break;
+
+			case OpCode.LoadConstant:
+				ret.AppendFormat( ": R{0} = K{1}", A, Bx );
+				break;
+
+			case OpCode.LoadConstantEx:
+				ret.AppendFormat( ": R{0} = K...", A );
+				break;
+
+			case OpCode.LoadNil:
+				ret.AppendFormat( B == 0 ? ": R{0} = nil" : ": R{0}..R{1} = nil", A, A + B );
+				break;
+
+			case OpCode.GetTable:
+				ret.AppendFormat( ": R{0} = R{1}[{2}]", A, B, Rk( C ) );
+				break;
+
+			case OpCode.SetTable:
+				ret.AppendFormat( ": R{0}[{1}] = {2}", A, Rk( B ), Rk( C ) );
+				break;	
+
+			case OpCode.GetUpValue:
+				ret.AppendFormat( ": R{0} = U{1}", A, B );
+				break;
+
+			case OpCode.SetUpValue:
+				ret.AppendFormat( ": U{1} = R{0}", A, B );
+				break;
+
+			case OpCode.GetUpValueTable:
+				ret.AppendFormat( ": R{0} = U{1}[{2}]", A, B, Rk( C ) );
+				break;
+
+			case OpCode.SetUpValueTable:
+				ret.AppendFormat( ": U{0}[{1}] = {2}", A, Rk( B ), Rk( C ) );
+				break;
+
+			case OpCode.Add:
+			case OpCode.Sub:
+			case OpCode.Mul:
+			case OpCode.Div:
+			case OpCode.Mod:
+			case OpCode.Pow:
+				ret.AppendFormat( ": R{0} = {1} {3} {2}", A, Rk( B ), Rk( C ), GetArithOp( OpCode ) );
+				break;
+
+			case OpCode.ExtraArg:
+				ret.AppendFormat( ": ...{0}", Ax );
+				break;
+			}
+
+			return ret.ToString();
+		}
+
+		private static string GetArithOp( OpCode op )
+		{
+			switch( op )
+			{
+			case OpCode.Add: return "+";
+			case OpCode.Sub: return "-";
+			case OpCode.Mul: return "*";
+			case OpCode.Div: return "/";
+			case OpCode.Mod: return "%";
+			case OpCode.Pow: return "^";
+			default: return string.Empty;
+			}
+		}
+
+		private static string Rk( int i )
+		{
+			if( (i & BitK) != 0 )
+				return "K" + (i & ~BitK).ToString();
+			else
+				return "R" + i.ToString();
+		}
 	}
 
 	/// <remarks>

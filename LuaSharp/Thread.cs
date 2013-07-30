@@ -38,26 +38,45 @@ namespace LuaSharp
 				if( spaceNeeded < 0 )
 					throw new ArgumentOutOfRangeException( "spaceNeeded" );
 
-				int minLen = owner.stackTop + spaceNeeded;
-
-				if( owner.stack.Length < minLen )
-				{
-					int growLen = owner.stack.Length;
-					growLen = growLen < 256 ? growLen * 2 : growLen + MinStack;
-					Array.Resize( ref owner.stack, Math.Max( growLen, minLen ) );
-				}
+				owner.CheckStack( owner.stackTop + spaceNeeded );
 			}
 
 			public void Push( Value value )
 			{
 				owner.stack[owner.stackTop++] = value;
 			}
+
+			public Value this[int index]
+			{
+				get
+				{
+					if( index == 0 )
+						throw new ArgumentOutOfRangeException( "index" );
+
+					if( index < 0 )
+						index = owner.stackTop + index;
+					else
+						index = owner.stackTop - owner.call.StackBase + index - 1;
+
+					return owner.stack[index];
+				}
+			}
 		}
 
 		public StackOps Stack { get { return new StackOps( this ); } }
 
+		private void CheckStack( int minLen )
+		{
+			if( stack.Length < minLen )
+			{
+				int growLen = stack.Length;
+				growLen = growLen < 256 ? growLen * 2 : growLen + MinStack;
+				Array.Resize( ref stack, Math.Max( growLen, minLen ) );
+			}
+		}
+
 		private CallInfo call; //the top of the call stack
-		private CallInfo[] callInfos; //the rest of the call stack
+		private CallInfo[] callInfos = new CallInfo[16]; //the rest of the call stack
 		private int numCallInfos; //the number of items in the call stack
 		
 		private struct CallInfo
@@ -70,6 +89,8 @@ namespace LuaSharp
 			/// </summary>
 			public int PC;
 
+			public int NumRetValues;
+
 			public object Callable;
 		}
 
@@ -78,6 +99,7 @@ namespace LuaSharp
 		/// </summary>
 		internal void Execute()
 		{
+		newFrame:
 			var stackBase = call.StackBase;
 
 			Value[] upValues = null;
@@ -176,7 +198,7 @@ namespace LuaSharp
 							stack[stackBase + c];
 
 						Value upVal;
-						ReadUpValue( ref upValues[op.B], out upVal );
+						ReadUpValue( ref upValues[op.A], out upVal );
 
 						var table = (Table)upVal.RefVal;
 						SetTable( table, ref key, ref value );
@@ -229,8 +251,15 @@ namespace LuaSharp
 
 				case OpCode.Add:
 					{
-						var b = stack[stackBase + op.B];
-						var c = stack[stackBase + op.C];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						var ic = op.C;
+						var c = (ic & Instruction.BitK) != 0 ?
+							consts[ic & ~Instruction.BitK] :
+							stack[stackBase + ic];
 
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
@@ -247,8 +276,15 @@ namespace LuaSharp
 
 				case OpCode.Sub:
 					{
-						var b = stack[stackBase + op.B];
-						var c = stack[stackBase + op.C];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						var ic = op.C;
+						var c = (ic & Instruction.BitK) != 0 ?
+							consts[ic & ~Instruction.BitK] :
+							stack[stackBase + ic];
 
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
@@ -265,8 +301,15 @@ namespace LuaSharp
 
 				case OpCode.Mul:
 					{
-						var b = stack[stackBase + op.B];
-						var c = stack[stackBase + op.C];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						var ic = op.C;
+						var c = (ic & Instruction.BitK) != 0 ?
+							consts[ic & ~Instruction.BitK] :
+							stack[stackBase + ic];
 
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
@@ -283,8 +326,15 @@ namespace LuaSharp
 
 				case OpCode.Div:
 					{
-						var b = stack[stackBase + op.B];
-						var c = stack[stackBase + op.C];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						var ic = op.C;
+						var c = (ic & Instruction.BitK) != 0 ?
+							consts[ic & ~Instruction.BitK] :
+							stack[stackBase + ic];
 
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
@@ -301,8 +351,15 @@ namespace LuaSharp
 
 				case OpCode.Mod:
 					{
-						var b = stack[stackBase + op.B];
-						var c = stack[stackBase + op.C];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						var ic = op.C;
+						var c = (ic & Instruction.BitK) != 0 ?
+							consts[ic & ~Instruction.BitK] :
+							stack[stackBase + ic];
 
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
@@ -320,8 +377,15 @@ namespace LuaSharp
 
 				case OpCode.Pow:
 					{
-						var b = stack[stackBase + op.B];
-						var c = stack[stackBase + op.C];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						var ic = op.C;
+						var c = (ic & Instruction.BitK) != 0 ?
+							consts[ic & ~Instruction.BitK] :
+							stack[stackBase + ic];
 
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
@@ -338,7 +402,11 @@ namespace LuaSharp
 
 				case OpCode.Negate:
 					{
-						var b = stack[stackBase + op.B];
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
 						if( b.RefVal == Value.NumTypeTag )
 						{
 							stack[stackBase + op.A].Set( -b.NumVal );
@@ -353,7 +421,11 @@ namespace LuaSharp
 
 				case OpCode.Not:
 					{
-						var b = stack[stackBase + op.B].RefVal;
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK].RefVal :
+							stack[stackBase + ib].RefVal;
+
 						var res = b == null || b == BoolBox.False;
 						stack[stackBase + op.A].RefVal = res ? BoolBox.True : BoolBox.False;
 					}
@@ -504,6 +576,27 @@ namespace LuaSharp
 					}
 					break;
 
+				case OpCode.Call:
+					throw new NotImplementedException();
+
+				case OpCode.TailCall:
+					throw new NotImplementedException();
+
+				case OpCode.Return:
+					{
+						var a = stackBase + op.A;
+						var b = op.B;
+
+						int numRet =  b != 0 ? b - 1 : stackTop - a;						
+						for( int i = 0; i < numRet; i++ )
+							stack[stackBase + i] = stack[a + i];
+
+						call.NumRetValues = numRet;
+
+						pc = code.Length;
+					}
+					break;
+
 				case OpCode.ForLoop:
 					{
 						var ai = stackBase + op.A;
@@ -608,6 +701,10 @@ namespace LuaSharp
 			var table = obj as Table;
 
 			int loc = table.FindValue( key );
+
+			if( loc == 0 )
+				loc = table.InsertNewKey( new CompactValue( key ) );
+
 			table.WriteValue( loc, ref value );
 		}
 
@@ -671,15 +768,27 @@ namespace LuaSharp
 
 		private struct OpenUpValue
 		{
-			public Value[] storage;
-			public int Index;
+			public Value[] UpValueStorage;
+			public int UpValueIndex;
+			public int StackIndex;
 		}
 
-
+		private OpenUpValue[] openUpValues = new OpenUpValue[32];
+		private int numOpenUpValues;
 
 		internal void RegisterOpenUpvalue( Value[] storage, int index )
 		{
-			throw new NotImplementedException();
+			if( numOpenUpValues == openUpValues.Length )
+				Array.Resize( ref openUpValues, openUpValues.Length + 32 );
+
+			Debug.Assert( storage[index].RefVal == Value.OpenUpValueTag );
+
+			OpenUpValue rec;
+			rec.UpValueStorage = storage;
+			rec.UpValueIndex = index;
+			rec.StackIndex = (int)storage[index].NumVal;
+
+			openUpValues[numOpenUpValues++] = rec;
 		}
 
 		/// <summary>
@@ -687,7 +796,74 @@ namespace LuaSharp
 		/// </summary>
 		private void CloseUpValues( int index )
 		{
-			throw new NotImplementedException();
+			int i;
+			for( i = numOpenUpValues - 1; i >= 0; i-- )
+			{
+				var rec = openUpValues[i];
+				var stk = stack[rec.StackIndex];
+
+				var asUpValRef = stk.RefVal as Value[];
+				if( asUpValRef == null )
+				{
+					//values initially close to simple values
+
+					rec.UpValueStorage[rec.UpValueIndex] = stk;
+
+					if( !(stk.RefVal is ValueBox) )
+					{
+						//keep track of where we closed this value to
+						//if another open value closes on this slot, we
+						//need to properly box it and fix both references
+
+						stack[rec.StackIndex].RefVal = rec.UpValueStorage;
+						stack[rec.StackIndex].NumVal = rec.UpValueIndex;
+					}
+				}
+				else
+				{
+					//the value's already been closed to a simple value
+
+					int upIdx = (int)stk.NumVal;
+					var box = new ValueBox { Value = asUpValRef[upIdx] };
+					
+					asUpValRef[upIdx].RefVal = box;
+					rec.UpValueStorage[rec.UpValueIndex].RefVal = box;
+
+					//we don't want to go through this path each time
+					//so we put the box on the stack, any further upvalues
+					//closing on this slot will take the short path above
+
+					stack[rec.StackIndex].RefVal = box;
+				}
+
+				openUpValues[i].UpValueStorage = null;
+			}
+
+			//restore the original stack values (ToDo: find out if this is necessary)
+
+			for( int j = i + 1; j < numOpenUpValues; j++ )
+			{
+				var stkIdx = openUpValues[j].StackIndex;
+				var stk = stack[stkIdx];
+
+				var asUpValRef = stk.RefVal as Value[];
+				if( asUpValRef != null )
+				{
+					stack[stkIdx] = asUpValRef[(int)stk.NumVal];
+					continue;
+				}
+
+				var asBox = stk.RefVal as ValueBox;
+				if( asBox != null )
+				{
+					stack[stkIdx] = asBox.Value;
+					continue;
+				}
+			}
+
+			//and... done!
+
+			numOpenUpValues = i + 1;
 		}
 
 		private Function CreateClosure( Proto proto, Value[] parentUpValues )
@@ -740,6 +916,71 @@ namespace LuaSharp
 			}
 
 			return new Closure() { Proto = proto, UpValues = upValues };
+		}
+
+		public const int CallReturnAll = -1;
+
+		public void Call( int numArgs, int numResults )
+		{
+			//var stk = Stack;
+
+			throw new NotImplementedException();
+		}
+
+		public void Call( Function func, int numArgs, int numResults )
+		{
+			if( func == null )
+				throw new ArgumentNullException( "func" );
+			if( numArgs < 0 )
+				throw new ArgumentOutOfRangeException( "numArgs" );
+			if( numResults < 0 && numResults != CallReturnAll )
+				throw new ArgumentOutOfRangeException( "numResults" );
+			
+			var proto = func as Proto;
+
+			if( proto == null )
+			{
+				var asClosure = func as Closure;
+				if( asClosure == null )
+					throw new ArgumentException( "Unsupported func type." );
+				proto = asClosure.Proto;
+			}
+
+			int newStackBase = stackTop - numArgs;
+			if( newStackBase < 0 || (call.Callable != null && newStackBase < call.StackBase) )
+				throw new ArgumentException( "Fewer args provided than expected.", "numArgs" );
+
+			if( numResults != CallReturnAll && stackTop - numArgs + numResults > stack.Length )
+				throw new ArgumentException( "This call would overflow the stack." );
+
+			int newStackTop = newStackBase + proto.MaxStack;
+			CheckStack( newStackTop );
+
+			if( call.Callable != null )
+			{
+				if( numCallInfos == callInfos.Length )
+					Array.Resize( ref callInfos, callInfos.Length + 16 );
+				callInfos[numCallInfos++] = call;
+			}
+
+			call.Callable = func;
+			call.StackBase = newStackBase;
+			call.Top = newStackTop;
+
+			Execute();
+
+			int numRets = call.NumRetValues;
+
+			if( numRets != CallReturnAll && numRets > numResults )
+				numRets = numResults;
+
+			stackTop = call.StackBase + numRets;
+
+			while( numRets < numResults )
+			{
+				stack[stackTop++].RefVal = null;
+				numRets++;
+			}
 		}
 	}
 }
