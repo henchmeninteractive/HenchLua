@@ -85,6 +85,8 @@ namespace LuaSharp
 
 		internal const int FieldsPerFlush = 50;
 
+#if DEBUG
+
 		public override string ToString()
 		{
 			var ret = new StringBuilder();
@@ -148,6 +150,65 @@ namespace LuaSharp
 				ret.AppendFormat( ": R{0} = {1} {3} {2}", A, Rk( B ), Rk( C ), GetArithOp( OpCode ) );
 				break;
 
+			case OpCode.Closure:
+				ret.AppendFormat( ": R{0} = MakeClosure( P{1} )", A, Bx );
+				break;
+
+			case OpCode.Call:
+				if( C == 0 )
+					ret.AppendFormat( ": R{0}... =", A );
+				else if( C == 2 )
+					ret.AppendFormat( ": R{0} =", A );
+				else if( C > 2 )
+					ret.AppendFormat( ": R{0}..R{1} =", A, A + C - 2 );
+
+				ret.AppendFormat( " R{0}", A );
+
+				if( B == 0 )
+					ret.AppendFormat( "( R{0}... )", A + 1 );
+				else if( B == 1 )
+					ret.Append( "()" );
+				else if( B == 2 )
+					ret.AppendFormat( "( R{0} )", A + 1 );
+				else
+					ret.AppendFormat( "( R{0}..R{1} )", A + 1, A + 1 + B - 2 );
+				break;
+
+			case OpCode.TailCall:
+				ret.AppendFormat( ": return R{0}", A );
+
+				if( B == 0 )
+					ret.AppendFormat( "( R{0}... )", A + 1 );
+				else if( B == 1 )
+					ret.Append( "()" );
+				else if( B == 2 )
+					ret.AppendFormat( "( R{0} )", A + 1 );
+				else
+					ret.AppendFormat( "( R{0}..R{1} )", A + 1, A + 1 + B - 2 );
+				break;
+
+			case OpCode.Return:
+				if( B == 0 )
+					ret.AppendFormat( ": return R{0}...", A );
+				else if( B == 1 )
+					ret.Append( ": return" );
+				else if( B == 2 )
+					ret.AppendFormat( ": return R{0}", A );
+				else
+					ret.AppendFormat( ": return R{0}..R{1}", A, A + B - 1 );
+				break;
+
+			case OpCode.Vararg:
+				if( B == 0 )
+					ret.AppendFormat( ": R{0}... = ...", A );
+				else if( B == 1 )
+					ret.AppendFormat( ": ..." );
+				else if( B == 2 )
+					ret.AppendFormat( ": R{0} = ...", A );
+				else
+					ret.AppendFormat( ": R{0}..R{1} = ...", A, A + B - 2 );
+				break;
+
 			case OpCode.ExtraArg:
 				ret.AppendFormat( ": ...{0}", Ax );
 				break;
@@ -177,6 +238,7 @@ namespace LuaSharp
 			else
 				return "R" + i.ToString();
 		}
+#endif
 	}
 
 	/// <remarks>

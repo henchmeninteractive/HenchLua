@@ -54,12 +54,34 @@ namespace LuaSharp
 						throw new ArgumentOutOfRangeException( "index" );
 
 					if( index < 0 )
+					{
 						index = owner.stackTop + index;
+						if( index < owner.call.StackBase )
+							throw new ArgumentOutOfRangeException( "index" );
+					}
 					else
-						index = owner.stackTop - owner.call.StackBase + index - 1;
+					{
+						index = owner.call.StackBase + index - 1;
+						if( index >= owner.stackTop )
+							throw new ArgumentOutOfRangeException( "index" );
+					}
 
 					return owner.stack[index];
 				}
+			}
+
+			public void Pop( int count = 1 )
+			{
+				if( count < 0 )
+					throw new ArgumentOutOfRangeException( "count" );
+				if( count == 0 )
+					return;
+
+				int newTop = owner.stackTop - count;
+				if( newTop < owner.call.StackBase )
+					throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
+
+				owner.stackTop = newTop;
 			}
 		}
 
@@ -82,16 +104,40 @@ namespace LuaSharp
 		private struct CallInfo
 		{
 			public int StackBase;
-			public int Top;
 
 			/// <summary>
 			/// The currently executing op.
 			/// </summary>
 			public int PC;
 
-			public int NumRetValues;
-
 			public object Callable;
+
+			/// <summary>
+			/// Where to find the function's varargs.
+			/// </summary>
+			public int VarArgsIndex;
+
+			/// <summary>
+			/// Where to stick the results.
+			/// </summary>
+			public int ResultIndex;
+			/// <summary>
+			/// How many results we want.
+			/// </summary>
+			public int ResultCount;
+		}
+
+		private void PushCallInfo()
+		{
+			if( numCallInfos == callInfos.Length )
+				Array.Resize( ref callInfos, callInfos.Length + 16 );
+			callInfos[numCallInfos++] = call;
+		}
+
+		private void PopCallInfo()
+		{
+			Debug.Assert( numCallInfos != 0 );
+			call = callInfos[--numCallInfos];
 		}
 
 		/// <summary>
@@ -99,7 +145,6 @@ namespace LuaSharp
 		/// </summary>
 		internal void Execute()
 		{
-		newFrame:
 			var stackBase = call.StackBase;
 
 			Value[] upValues = null;
@@ -577,21 +622,84 @@ namespace LuaSharp
 					break;
 
 				case OpCode.Call:
-					throw new NotImplementedException();
+					{
+						int funcIdx = stackBase + op.A;
+						object func = stack[funcIdx].RefVal;
+
+						int numArgs = op.B - 1;
+						if( numArgs == -1 )
+							numArgs = stackTop - funcIdx - 1;
+
+						int numRetVals = op.C - 1;
+
+						call.PC++; //return to the next instruction
+						BeginCall( funcIdx, numArgs, numRetVals ); //valid because CallReturnAll == -1
+
+						Execute();
+
+						PopCallInfo();
+					}
+					break;
 
 				case OpCode.TailCall:
-					throw new NotImplementedException();
+					{
+						//ToDo: actually properly implement the tail call...
+
+						if( proto.InnerProtos != null )
+							CloseUpValues( stackBase );
+
+						int funcIdx = stackBase + op.A;
+						object func = stack[funcIdx].RefVal;
+
+						int numArgs = op.B - 1;
+						if( numArgs == -1 )
+							numArgs = stackTop - funcIdx - 1;
+
+						int resultIndex = call.ResultIndex;
+
+						call.PC++; //return to the next instruction
+						BeginCall( funcIdx, numArgs, call.ResultCount );
+						call.ResultIndex = resultIndex;
+
+						Execute();
+
+						PopCallInfo();
+
+						pc = code.Length;
+					}
+					break;
 
 				case OpCode.Return:
 					{
+						if( proto.InnerProtos != null )
+							CloseUpValues( stackBase );
+
 						var a = stackBase + op.A;
 						var b = op.B;
 
-						int numRet =  b != 0 ? b - 1 : stackTop - a;						
-						for( int i = 0; i < numRet; i++ )
-							stack[stackBase + i] = stack[a + i];
+						int numRet =  b != 0 ? b - 1 : stackTop - a;
 
-						call.NumRetValues = numRet;
+						var retIdx = call.ResultIndex;
+						var retCount = call.ResultCount;
+						
+						if( retCount != CallReturnAll && numRet > retCount )
+							numRet = retCount;
+
+						if( retIdx != a )
+						{
+							for( int i = 0; i < numRet; i++ )
+								stack[retIdx + i] = stack[a + i];
+						}
+
+						if( retCount == CallReturnAll )
+						{
+							stackTop = retIdx + numRet;
+						}
+						else
+						{
+							for( int i = numRet; i < retCount; i++ )
+								stack[retIdx + i].RefVal = null;
+						}
 
 						pc = code.Length;
 					}
@@ -666,7 +774,7 @@ namespace LuaSharp
 						for( ; n > 0; n-- )
 							tableArray[--last].Set( ref stack[ia + n] );
 
-						stackTop = call.Top;
+						//stackTop = call.Top;
 					}
 					break;
 
@@ -676,12 +784,110 @@ namespace LuaSharp
 					break;
 
 				case OpCode.Vararg:
-					throw new NotImplementedException();
+					{
+						int srcIdx = call.VarArgsIndex;
+						int destIdx = stackBase + op.A;
+
+						int numVarArgs = call.StackBase - srcIdx;
+						int numWanted = op.B - 1;
+
+						if( numWanted == -1 )
+						{
+							numWanted = numVarArgs;
+							stackTop = destIdx + numWanted;
+						}
+
+						int numHad = numWanted < numVarArgs ? numWanted : numVarArgs;
+						for( int i = 0; i < numHad; i++ )
+							stack[destIdx + i] = stack[srcIdx + i];
+
+						for( int i = numHad; i < numWanted; i++ )
+							stack[destIdx + i].RefVal = null;
+					}
+					break;
 
 				default:
 					throw new InvalidBytecodeException();
 				}
 			}
+		}
+
+		private void BeginCall( int funcIdx, int numArgs, int numResults )
+		{
+			var callable = stack[funcIdx].RefVal;
+
+			if( callable == null )
+				throw new ArgumentNullException( "Attempt to call a nil value." );
+
+			var asFunc = callable as Function;
+			if( asFunc != null )
+			{
+				var proto = asFunc as Proto;
+				if( proto == null )
+				{
+					var asClosure = asFunc as Closure;
+					if( asClosure != null )
+						proto = asClosure.Proto;
+				}
+
+				if( proto == null )
+					throw new ArgumentException( "Attempting to call a non-callable object." );
+
+				int numVarArgs = 0;
+				if( proto.HasVarArgs )
+					numVarArgs = Math.Max( numArgs - proto.NumParams, 0 );
+
+				int newStackBase = funcIdx + 1;
+
+				if( numVarArgs != 0 )
+					newStackBase += numArgs;
+
+				//if( newStackBase < 0 || (call.Callable != null && newStackBase < call.StackBase) )
+					//throw new ArgumentException( "Fewer args provided than expected.", "numArgs" );
+
+				//if( numResults != CallReturnAll && stackTop - numArgs + numResults > stack.Length )
+					//throw new ArgumentException( "This call would overflow the stack." );
+
+				int newStackTop = newStackBase + proto.MaxStack;
+				CheckStack( newStackTop );
+
+				if( numVarArgs != 0 )
+				{
+					//got at least proto.NumParams on the stack
+					//move them to the right spot
+
+					for( int i = 0; i < proto.NumParams; i++ )
+					{
+						int srcIdx = funcIdx + 1 + i;
+
+						stack[newStackBase + i] = stack[srcIdx];
+						stack[srcIdx].RefVal = null;
+					}
+				}
+				else
+				{
+					//complete the missing args
+
+					for( int i = numArgs; i < proto.NumParams; i++ )
+						stack[newStackBase + i].RefVal = null;
+				}
+
+				PushCallInfo();
+
+				call.Callable = callable;
+				call.StackBase = newStackBase;
+
+				call.PC = 0;
+
+				call.ResultIndex = funcIdx;
+				call.ResultCount = numResults;
+
+				call.VarArgsIndex = newStackBase - numVarArgs;
+
+				return;
+			}
+
+			throw new NotImplementedException();
 		}
 
 		private void GetTable( object obj, ref Value key, out Value value )
@@ -788,6 +994,9 @@ namespace LuaSharp
 			rec.UpValueIndex = index;
 			rec.StackIndex = (int)storage[index].NumVal;
 
+			Debug.Assert( numOpenUpValues == 0 ||
+				openUpValues[numOpenUpValues - 1].StackIndex <= rec.StackIndex );
+
 			openUpValues[numOpenUpValues++] = rec;
 		}
 
@@ -800,6 +1009,10 @@ namespace LuaSharp
 			for( i = numOpenUpValues - 1; i >= 0; i-- )
 			{
 				var rec = openUpValues[i];
+
+				if( rec.StackIndex < index )
+					break;
+
 				var stk = stack[rec.StackIndex];
 
 				var asUpValRef = stk.RefVal as Value[];
@@ -889,29 +1102,9 @@ namespace LuaSharp
 				}
 				else
 				{
-					//point at a parent upvalue
-					var parentVal = parentUpValues[desc.Index];
-
-					var asClosed = parentVal.RefVal as ValueBox;
-					if( asClosed == null )
-					{
-						//we need to force the value closed
-
-						if( parentVal.RefVal == Value.OpenUpValueTag )
-						{
-							//convert an open upval to a simple value
-
-							parentVal = stack[(int)parentVal.NumVal];
-							//unmark it here or just skip it later?
-						}
-
-						//conver the simple value to a fully closed upvalue
-
-						asClosed = new ValueBox( parentVal );
-						parentUpValues[desc.Index].RefVal = asClosed;
-					}
-
-					upValues[i].RefVal = asClosed;
+					upValues[i] = parentUpValues[desc.Index];
+					if( upValues[i].RefVal == Value.OpenUpValueTag )
+						RegisterOpenUpvalue( upValues, i );
 				}
 			}
 
@@ -956,31 +1149,20 @@ namespace LuaSharp
 			int newStackTop = newStackBase + proto.MaxStack;
 			CheckStack( newStackTop );
 
-			if( call.Callable != null )
-			{
-				if( numCallInfos == callInfos.Length )
-					Array.Resize( ref callInfos, callInfos.Length + 16 );
-				callInfos[numCallInfos++] = call;
-			}
+			PushCallInfo();
 
 			call.Callable = func;
 			call.StackBase = newStackBase;
-			call.Top = newStackTop;
+
+			call.ResultIndex = newStackBase;
+			call.ResultCount = numResults;
 
 			Execute();
 
-			int numRets = call.NumRetValues;
+			if( numResults != CallReturnAll )
+				stackTop = call.StackBase + numResults;
 
-			if( numRets != CallReturnAll && numRets > numResults )
-				numRets = numResults;
-
-			stackTop = call.StackBase + numRets;
-
-			while( numRets < numResults )
-			{
-				stack[stackTop++].RefVal = null;
-				numRets++;
-			}
+			PopCallInfo();
 		}
 	}
 }
