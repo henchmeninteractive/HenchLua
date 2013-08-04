@@ -40,7 +40,7 @@ namespace LuaSharp
 
 			var reader = new BinaryReader( byteCode );
 
-			var proto = Proto.Load( reader );
+			var proto = Proto.Load( reader, true );
 
 			if( proto.UpValues == null )
 				return proto;
@@ -49,6 +49,22 @@ namespace LuaSharp
 				throw new InvalidBytecodeException( "Chunks can't have more than one upvalue." );
 
 			return new Closure() { Proto = proto, UpValues = new Value[] { globals } };
+		}
+
+		public static void Optimize( Function function )
+		{
+			var chunk = function as ChunkProto;
+			if( chunk == null )
+			{
+				var asClosure = function as Closure;
+				if( asClosure != null )
+					chunk = asClosure.Proto as ChunkProto;
+			}
+
+			if( chunk == null )
+				throw new ArgumentException( "Optimize only operates on chunks." );
+
+			Proto.MarkValueCopyingUpvalues( chunk, null );			
 		}
 
 		private struct Header

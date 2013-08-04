@@ -31,6 +31,27 @@ namespace LuaSharp
 			public int Top
 			{
 				get { return owner.stackTop - owner.call.StackBase; }
+				set
+				{
+					if( value < 0 )
+						throw new ArgumentOutOfRangeException( "Top" );
+
+					int oldTop = owner.stackTop;
+					int newTop = owner.call.StackBase + value;
+
+					var stack = owner.stack;
+
+					if( newTop > stack.Length )
+						throw new ArgumentOutOfRangeException( "Top", "New top overflows the stack." );
+
+					int start = Math.Min( oldTop, newTop );
+					int end = Math.Max( oldTop, newTop );
+
+					for( int i = start; i < end; i++ )
+						stack[i].RefVal = null;
+
+					owner.stackTop = newTop;
+				}
 			}
 
 			public void CheckSpace( int spaceNeeded )
@@ -41,33 +62,71 @@ namespace LuaSharp
 				owner.CheckStack( owner.stackTop + spaceNeeded );
 			}
 
-			public void Push( Value value )
+			public int AbsIndex( int index )
 			{
-				owner.stack[owner.stackTop++] = value;
+				if( index == 0 )
+					return 0;
+
+				if( index < 0 )
+					index = Top + index + 1;
+
+				return index;
+			}
+
+			internal int RealIndex( int index )
+			{
+				if( index == 0 )
+					throw new ArgumentOutOfRangeException( "index" );
+
+				if( index < 0 )
+				{
+					index = owner.stackTop + index;
+					if( index < owner.call.StackBase )
+						throw new ArgumentOutOfRangeException( "index" );
+				}
+				else
+				{
+					index = owner.call.StackBase + index - 1;
+					if( index >= owner.stackTop )
+						throw new ArgumentOutOfRangeException( "index" );
+				}
+
+				return index;
 			}
 
 			public Value this[int index]
 			{
-				get
-				{
-					if( index == 0 )
-						throw new ArgumentOutOfRangeException( "index" );
+				get { return owner.stack[RealIndex( index )]; }
+				set { owner.stack[RealIndex( index )] = value; }
+			}
 
-					if( index < 0 )
-					{
-						index = owner.stackTop + index;
-						if( index < owner.call.StackBase )
-							throw new ArgumentOutOfRangeException( "index" );
-					}
-					else
-					{
-						index = owner.call.StackBase + index - 1;
-						if( index >= owner.stackTop )
-							throw new ArgumentOutOfRangeException( "index" );
-					}
+			public void Push( Value value )
+			{
+				var stack = owner.stack;
+				var stackTop = owner.stackTop;
 
-					return owner.stack[index];
-				}
+				if( stackTop == stack.Length )
+					throw new InvalidOperationException( "Lua stack overflow." );
+
+				stack[stackTop] = value;
+
+				owner.stackTop = stackTop + 1;
+			}
+
+			public void Insert( int index, Value value )
+			{
+				var stack = owner.stack;
+				var stackTop = owner.stackTop;
+
+				if( stackTop == stack.Length )
+					throw new InvalidOperationException( "Lua stack overflow." );
+
+				index = RealIndex( index );
+
+				Array.Copy( stack, index, stack, index + 1, stackTop - index );
+				stack[index] = value;
+
+				owner.stackTop = stackTop + 1;
 			}
 
 			public void Pop( int count = 1 )
@@ -842,12 +901,6 @@ namespace LuaSharp
 				if( numVarArgs != 0 )
 					newStackBase += numArgs;
 
-				//if( newStackBase < 0 || (call.Callable != null && newStackBase < call.StackBase) )
-					//throw new ArgumentException( "Fewer args provided than expected.", "numArgs" );
-
-				//if( numResults != CallReturnAll && stackTop - numArgs + numResults > stack.Length )
-					//throw new ArgumentException( "This call would overflow the stack." );
-
 				int newStackTop = newStackBase + proto.MaxStack;
 				CheckStack( newStackTop );
 
@@ -982,17 +1035,15 @@ namespace LuaSharp
 		private OpenUpValue[] openUpValues = new OpenUpValue[32];
 		private int numOpenUpValues;
 
-		internal void RegisterOpenUpvalue( Value[] storage, int index )
+		internal void RegisterOpenUpvalue( Value[] storage, int index, int stackIndex )
 		{
 			if( numOpenUpValues == openUpValues.Length )
 				Array.Resize( ref openUpValues, openUpValues.Length + 32 );
 
-			Debug.Assert( storage[index].RefVal == Value.OpenUpValueTag );
-
 			OpenUpValue rec;
 			rec.UpValueStorage = storage;
 			rec.UpValueIndex = index;
-			rec.StackIndex = (int)storage[index].NumVal;
+			rec.StackIndex = stackIndex;
 
 			Debug.Assert( numOpenUpValues == 0 ||
 				openUpValues[numOpenUpValues - 1].StackIndex <= rec.StackIndex );
@@ -1092,19 +1143,39 @@ namespace LuaSharp
 			for( int i = 0; i < upValDesc.Length; i++ )
 			{
 				var desc = upValDesc[i];
-				if( desc.InStack )
+				if( desc.Kind == UpValueKind.StackPointing )
 				{
 					//create an open upvalue
-					upValues[i].RefVal = Value.OpenUpValueTag;
-					upValues[i].NumVal = stackBase + desc.Index;
+					int stackIndex = stackBase + desc.Index;
 
-					RegisterOpenUpvalue( upValues, i );
+					upValues[i].RefVal = Value.OpenUpValueTag;
+					upValues[i].NumVal = stackIndex;
+
+					RegisterOpenUpvalue( upValues, i, stackIndex );
 				}
 				else
 				{
-					upValues[i] = parentUpValues[desc.Index];
-					if( upValues[i].RefVal == Value.OpenUpValueTag )
-						RegisterOpenUpvalue( upValues, i );
+					var parentVal = parentUpValues[desc.Index];
+					
+					if( parentVal.RefVal == Value.OpenUpValueTag )
+					{
+						RegisterOpenUpvalue( upValues, i, (int)parentVal.NumVal );
+					}
+					else if( desc.Kind != UpValueKind.ValueCopying )
+					{
+						//this is the pint where we need to force simple upvalues closed
+
+						var asClosed = parentVal.RefVal as ValueBox;
+						if( asClosed == null )
+						{
+							asClosed = new ValueBox() { Value = parentVal };
+							parentVal.RefVal = asClosed;
+
+							parentUpValues[desc.Index].RefVal = asClosed;
+						}
+					}
+
+					upValues[i] = parentVal;
 				}
 			}
 
@@ -1115,54 +1186,44 @@ namespace LuaSharp
 
 		public void Call( int numArgs, int numResults )
 		{
-			//var stk = Stack;
-
-			throw new NotImplementedException();
-		}
-
-		public void Call( Function func, int numArgs, int numResults )
-		{
-			if( func == null )
-				throw new ArgumentNullException( "func" );
 			if( numArgs < 0 )
 				throw new ArgumentOutOfRangeException( "numArgs" );
-			if( numResults < 0 && numResults != CallReturnAll )
+			if( numResults != CallReturnAll && numResults < 0 )
 				throw new ArgumentOutOfRangeException( "numResults" );
-			
-			var proto = func as Proto;
 
-			if( proto == null )
+			int fnIndex = stackTop - numArgs - 1;
+			if( fnIndex < call.StackBase )
+				throw new ArgumentOutOfRangeException( "numArgs", "Trying to call a function with more arguments than have been pushed onto the stack." );
+
+			BeginCall( fnIndex, numArgs, numResults );
+
+			if( numResults != CallReturnAll && call.ResultIndex + numResults > stack.Length )
 			{
-				var asClosure = func as Closure;
-				if( asClosure == null )
-					throw new ArgumentException( "Unsupported func type." );
-				proto = asClosure.Proto;
+				PopCallInfo();
+				throw new ArgumentOutOfRangeException( "numArgs", "The function call would overflow the stack." );
 			}
-
-			int newStackBase = stackTop - numArgs;
-			if( newStackBase < 0 || (call.Callable != null && newStackBase < call.StackBase) )
-				throw new ArgumentException( "Fewer args provided than expected.", "numArgs" );
-
-			if( numResults != CallReturnAll && stackTop - numArgs + numResults > stack.Length )
-				throw new ArgumentException( "This call would overflow the stack." );
-
-			int newStackTop = newStackBase + proto.MaxStack;
-			CheckStack( newStackTop );
-
-			PushCallInfo();
-
-			call.Callable = func;
-			call.StackBase = newStackBase;
-
-			call.ResultIndex = newStackBase;
-			call.ResultCount = numResults;
 
 			Execute();
 
 			if( numResults != CallReturnAll )
-				stackTop = call.StackBase + numResults;
+				stackTop = call.ResultIndex + numResults;
 
 			PopCallInfo();
+		}
+
+		public void Call( Callable func, int numArgs, int numResults )
+		{
+			if( numArgs < 0 )
+				throw new ArgumentOutOfRangeException( "numArgs" );
+			if( numResults != CallReturnAll && numResults < 0 )
+				throw new ArgumentOutOfRangeException( "numResults" );
+
+			if( numArgs != 0 )
+				Stack.Insert( -numArgs, func );
+			else
+				Stack.Push( func );
+
+			Call( numArgs, numResults );
 		}
 	}
 }

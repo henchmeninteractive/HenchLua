@@ -86,7 +86,9 @@ namespace LuaSharp.Tests
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			var thread = new Thread();
+			
 			var func = Helpers.LoadFunc( script, new Table() );
+			Function.Optimize( func );
 
 			thread.Call( func, 0, Thread.CallReturnAll );
 

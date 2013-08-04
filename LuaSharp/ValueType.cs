@@ -11,6 +11,18 @@ namespace LuaSharp
 	/// </summary>
 	public struct Callable
 	{
+		public static readonly Callable Nil;
+
+		public Callable( Function value )
+		{
+			Val = value;
+		}
+
+		public static implicit operator Callable( Function value )
+		{
+			return new Callable() { Val = value };
+		}
+
 		internal object Val;
 
 		internal static bool IsCallable( object obj )
