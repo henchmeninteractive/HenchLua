@@ -83,6 +83,54 @@ namespace LuaSharp.Tests
 			RunTestScript( "ClosedUpValue3.lua", 42 );
 		}
 
+		[TestMethod]
+		public void SimpleLoop()
+		{
+			RunTestScript( "SimpleLoop.lua", 42 );
+		}
+
+		[TestMethod]
+		public void SimpleLoop2()
+		{
+			RunTestScript( "SimpleLoop2.lua", 6 );
+		}
+
+		[TestMethod]
+		public void SimpleLoop3()
+		{
+			RunTestScript( "SimpleLoop3.lua", 4 );
+		}
+
+		[TestMethod]
+		public void SimpleLoop4()
+		{
+			RunTestScript( "SimpleLoop4.lua", 15 );
+		}
+
+		[TestMethod]
+		public void If()
+		{
+			RunTestScript( "If.lua", 42 );
+		}
+
+		[TestMethod]
+		public void If2()
+		{
+			RunTestScript( "If2.lua", 42 );
+		}
+
+		[TestMethod]
+		public void If3()
+		{
+			RunTestScript( "If3.lua", 42 );
+		}
+
+		[TestMethod]
+		public void If4()
+		{
+			RunTestScript( "If4.lua", 42 );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			var thread = new Thread();

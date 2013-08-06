@@ -29,4 +29,19 @@ namespace LuaSharp
 		  System.Runtime.Serialization.StreamingContext context )
 			: base( info, context ) { }
 	}
+
+	/// <summary>
+	/// Attempting to apply an operation to an invalid value.
+	/// </summary>
+	[Serializable]
+	public class InvalidOperandException : LuaException
+	{
+		public InvalidOperandException() { }
+		public InvalidOperandException( string message ) : base( message ) { }
+		public InvalidOperandException( string message, Exception inner ) : base( message, inner ) { }
+		protected InvalidOperandException(
+		  System.Runtime.Serialization.SerializationInfo info,
+		  System.Runtime.Serialization.StreamingContext context )
+			: base( info, context ) { }
+	}
 }

@@ -237,7 +237,7 @@ namespace LuaSharp
 
 				case OpCode.LoadConstantEx:
 					{
-						var op2 = code[pc++];
+						var op2 = code[++pc];
 						Debug.Assert( op2.OpCode == OpCode.ExtraArg );
 						stack[stackBase + op.A] = consts[op2.Ax];
 					}
@@ -573,7 +573,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							op = code[pc++];
+							op = code[++pc];
 							Debug.Assert( op.OpCode == OpCode.Jmp );
 							goto case OpCode.Jmp;
 						}
@@ -604,7 +604,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							op = code[pc++];
+							op = code[++pc];
 							Debug.Assert( op.OpCode == OpCode.Jmp );
 							goto case OpCode.Jmp;
 						}
@@ -635,7 +635,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							op = code[pc++];
+							op = code[++pc];
 							Debug.Assert( op.OpCode == OpCode.Jmp );
 							goto case OpCode.Jmp;
 						}
@@ -653,7 +653,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							op = code[pc++];
+							op = code[++pc];
 							Debug.Assert( op.OpCode == OpCode.Jmp );
 							goto case OpCode.Jmp;
 						}
@@ -673,7 +673,7 @@ namespace LuaSharp
 						{
 							stack[stackBase + op.A] = stack[stackBase + op.B];
 
-							op = code[pc++];
+							op = code[++pc];
 							Debug.Assert( op.OpCode == OpCode.Jmp );
 							goto case OpCode.Jmp;
 						}
@@ -788,7 +788,23 @@ namespace LuaSharp
 					break;
 
 				case OpCode.ForPrep:
-					throw new NotImplementedException();
+					{
+						int iInit = stackBase + op.A;
+						int iLimit = iInit + 1;
+						int iStep = iInit + 2;
+
+						if( !ToNumber( ref stack[iInit] ) )
+							throw new InvalidOperandException( "Initial value of for loops must be a number." );
+						if( !ToNumber( ref stack[iLimit] ) )
+							throw new InvalidOperandException( "Limit value of for loops must be a number." );
+						if( !ToNumber( ref stack[iStep] ) )
+							throw new InvalidOperandException( "Step value of for loops must be a number." );
+
+						stack[iInit].NumVal -= stack[iStep].NumVal;
+
+						pc += op.SBx;
+					}
+					break;
 
 				case OpCode.TForCall:
 					throw new NotImplementedException();
@@ -817,7 +833,7 @@ namespace LuaSharp
 
 						if( c == 0 )
 						{
-							var opEx = code[pc++];
+							var opEx = code[++pc];
 							Debug.Assert( opEx.OpCode == OpCode.ExtraArg );
 							c = opEx.Ax;
 						}
@@ -965,6 +981,14 @@ namespace LuaSharp
 				loc = table.InsertNewKey( new CompactValue( key ) );
 
 			table.WriteValue( loc, ref value );
+		}
+
+		private bool ToNumber( ref Value val )
+		{
+			if( val.RefVal == Value.NumTypeTag )
+				return true;
+
+			return false;
 		}
 
 		private void DoArith( String opName, object a, object b, out Value ret )

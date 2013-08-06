@@ -11,6 +11,10 @@ namespace LuaSharp
 {
 	public abstract class Function
 	{
+		internal Function()
+		{
+		}
+
 		public static Function Load( Stream byteCode, Table globals )
 		{
 			if( byteCode == null )
@@ -155,7 +159,7 @@ namespace LuaSharp
 		}
 	}
 
-	internal class Closure : Function
+	internal sealed class Closure : Function
 	{
 		internal Proto Proto;
 
@@ -190,5 +194,82 @@ namespace LuaSharp
 		/// overhead when functions construct closures that capture their arguments.
 		/// </summary>
 		internal Value[] UpValues;
+	}
+
+	public abstract class UserFunction : Function
+	{
+		protected UserFunction()
+		{
+		}
+
+		public abstract int Execute( Thread thread );
+	}
+
+	public delegate int UserCallback( Thread thread );
+
+	/// <summary>
+	/// Nicely wraps up both closures and callbacks.
+	/// </summary>
+	public struct Callable
+	{
+		public static readonly Callable Nil;
+
+		public Callable( Function value )
+		{
+			Val = value;
+		}
+
+		public Callable( UserCallback value )
+		{
+			Val = value;
+		}
+
+		public static implicit operator Callable( Function value )
+		{
+			return new Callable() { Val = value };
+		}
+
+		public static implicit operator Callable( UserCallback value )
+		{
+			return new Callable() { Val = value };
+		}
+
+		public bool IsNil { get { return Val == null; } }
+
+		public bool IsUserFunction { get { return Val is UserFunction; } }
+
+		public UserFunction AsUserFunction()
+		{
+			return Val as UserFunction;
+		}
+
+		public static explicit operator UserFunction( Callable value )
+		{
+			return (UserFunction)value.Val;
+		}
+
+		public bool IsUserCallback { get { return Val is UserCallback; } }
+
+		public UserCallback AsUserCallback()
+		{
+			return Val as UserCallback;
+		}
+
+		public static explicit operator UserCallback( Callable value )
+		{
+			return (UserCallback)value.Val;
+		}
+
+		internal object Val;
+
+		internal static bool IsCallable( object obj )
+		{
+			return obj is Function || obj is UserCallback;
+		}
+
+		internal static bool IsUserCallable( object obj )
+		{
+			return obj is UserFunction || obj is UserCallback;
+		}
 	}
 }
