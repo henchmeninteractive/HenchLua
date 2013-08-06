@@ -131,6 +131,88 @@ namespace LuaSharp.Tests
 			RunTestScript( "If4.lua", 42 );
 		}
 
+		[TestMethod]
+		public void Callback1()
+		{
+			var thread = new Thread();
+
+			var globals = new Table();
+			var func = Helpers.LoadFunc( "Callback.lua", globals );
+
+			int numCallbacks = 0;
+			globals[new String( "callback" )] = (Callable)(l =>
+			{
+				Assert.AreEqual( 1, l.Stack.Top );
+				Assert.AreEqual( 42, l.Stack[1] );
+
+				numCallbacks++;
+				return 0;
+			});
+
+			thread.Call( func, 0, 0 );
+
+			Assert.AreEqual( 1, numCallbacks );
+		}
+
+		[TestMethod]
+		public void Callback2()
+		{
+			var thread = new Thread();
+
+			var globals = new Table();
+			var func = Helpers.LoadFunc( "Callback.lua", globals );
+
+			var fn = new CallbackFunc();
+			globals[new String( "callback" )] = (Callable)fn;
+
+			thread.Call( func, 0, 0 );
+
+			Assert.AreEqual( 1, fn.RunCount );
+		}
+
+		private class CallbackFunc : UserFunction
+		{
+			public int RunCount = 0;
+
+			public override int Execute( Thread l )
+			{
+				Assert.AreEqual( 1, l.Stack.Top );
+				Assert.AreEqual( 42, l.Stack[1] );
+
+				RunCount++;
+				return 0;
+			}
+		}
+
+		[TestMethod]
+		public void CallbackReturn()
+		{
+			var thread = new Thread();
+
+			var globals = new Table();
+			var func = Helpers.LoadFunc( "CallbackReturn.lua", globals );
+
+			int numCallbacks = 0;
+			globals[new String( "callback" )] = (Callable)(l =>
+			{
+				Assert.AreEqual( 3, l.Stack.Top );
+
+				for( int i = 1; i <= 3; i++ )
+					l.Stack.Push( l.Stack[i].ToDouble() + i );
+
+				numCallbacks++;
+				return 3;
+			});
+
+			thread.Call( func, 0, 3 );
+
+			Assert.AreEqual( 2, numCallbacks );
+
+			Assert.AreEqual( 42, thread.Stack[1] );
+			Assert.AreEqual( 54, thread.Stack[2] );
+			Assert.AreEqual( 66, thread.Stack[3] );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			var thread = new Thread();

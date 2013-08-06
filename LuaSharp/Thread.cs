@@ -212,7 +212,11 @@ namespace LuaSharp
 			if( proto == null )
 			{
 				var asClosure = call.Callable as Closure;
-				Debug.Assert( asClosure != null );
+				if( asClosure == null )
+				{
+					ExecuteUserCode();
+					return;
+				}
 
 				proto = asClosure.Proto;
 				upValues = asClosure.UpValues;
@@ -220,6 +224,8 @@ namespace LuaSharp
 			
 			var code = proto.Code;
 			var consts = proto.Constants;
+
+			var stack = this.stack;
 
 			for( int pc = call.PC; pc < code.Length; call.PC = ++pc )
 			{
@@ -887,6 +893,47 @@ namespace LuaSharp
 			}
 		}
 
+		private void ExecuteUserCode()
+		{
+			int numRet = CallUserCode();
+
+			int retSrc = stackTop - numRet;
+
+			int retIndex = call.ResultIndex;
+			int retCount = call.ResultCount;
+
+			if( retCount != CallReturnAll && numRet > retCount )
+				numRet = retCount;
+			
+			var stack = this.stack;
+
+			for( int i = 0; i < numRet; i++ )
+				stack[retIndex + i] = stack[retSrc + i];
+
+			if( retCount == CallReturnAll )
+			{
+				stackTop = retIndex + numRet;
+			}
+			else
+			{
+				for( int i = numRet; i < retCount; i++ )
+					stack[retIndex + i].RefVal = null;
+			}
+		}
+
+		private int CallUserCode()
+		{
+			var asFunc = call.Callable as UserFunction;
+			if( asFunc != null )
+				return asFunc.Execute( this );
+
+			var asCb = call.Callable as UserCallback;
+			if( asCb != null )
+				return asCb( this );
+
+			throw new ArgumentException( "Attempting to call a non-callable object." );
+		}
+
 		private void BeginCall( int funcIdx, int numArgs, int numResults )
 		{
 			var callable = stack[funcIdx].RefVal;
@@ -894,69 +941,66 @@ namespace LuaSharp
 			if( callable == null )
 				throw new ArgumentNullException( "Attempt to call a nil value." );
 
-			var asFunc = callable as Function;
-			if( asFunc != null )
+			var proto = callable as Proto;
+
+			if( proto == null )
 			{
-				var proto = asFunc as Proto;
-				if( proto == null )
-				{
-					var asClosure = asFunc as Closure;
-					if( asClosure != null )
-						proto = asClosure.Proto;
-				}
+				var asClosure = callable as Closure;
+				if( asClosure != null )
+					proto = asClosure.Proto;
 
-				if( proto == null )
+				if( proto == null && !Callable.IsUserCallable( callable ) )
 					throw new ArgumentException( "Attempting to call a non-callable object." );
-
-				int numVarArgs = 0;
-				if( proto.HasVarArgs )
-					numVarArgs = Math.Max( numArgs - proto.NumParams, 0 );
-
-				int newStackBase = funcIdx + 1;
-
-				if( numVarArgs != 0 )
-					newStackBase += numArgs;
-
-				int newStackTop = newStackBase + proto.MaxStack;
-				CheckStack( newStackTop );
-
-				if( numVarArgs != 0 )
-				{
-					//got at least proto.NumParams on the stack
-					//move them to the right spot
-
-					for( int i = 0; i < proto.NumParams; i++ )
-					{
-						int srcIdx = funcIdx + 1 + i;
-
-						stack[newStackBase + i] = stack[srcIdx];
-						stack[srcIdx].RefVal = null;
-					}
-				}
-				else
-				{
-					//complete the missing args
-
-					for( int i = numArgs; i < proto.NumParams; i++ )
-						stack[newStackBase + i].RefVal = null;
-				}
-
-				PushCallInfo();
-
-				call.Callable = callable;
-				call.StackBase = newStackBase;
-
-				call.PC = 0;
-
-				call.ResultIndex = funcIdx;
-				call.ResultCount = numResults;
-
-				call.VarArgsIndex = newStackBase - numVarArgs;
-
-				return;
 			}
 
-			throw new NotImplementedException();
+			int numVarArgs = 0;
+			if( proto != null && proto.HasVarArgs )
+				numVarArgs = Math.Max( numArgs - proto.NumParams, 0 );
+
+			int newStackBase = funcIdx + 1;
+
+			if( numVarArgs != 0 )
+				newStackBase += numArgs;
+
+			int maxStack = proto != null ? proto.MaxStack : Thread.MinStack;
+
+			int newStackTop = newStackBase + maxStack;
+			CheckStack( newStackTop );
+
+			if( numVarArgs != 0 )
+			{
+				//got at least proto.NumParams on the stack
+				//move them to the right spot
+
+				for( int i = 0; i < proto.NumParams; i++ )
+				{
+					int srcIdx = funcIdx + 1 + i;
+
+					stack[newStackBase + i] = stack[srcIdx];
+					stack[srcIdx].RefVal = null;
+				}
+			}
+			else if( proto != null )
+			{
+				//complete the missing args
+
+				for( int i = numArgs; i < proto.NumParams; i++ )
+					stack[newStackBase + i].RefVal = null;
+			}
+
+			PushCallInfo();
+
+			call.Callable = callable;
+			call.StackBase = newStackBase;
+
+			call.PC = 0;
+
+			call.ResultIndex = funcIdx;
+			call.ResultCount = numResults;
+
+			call.VarArgsIndex = newStackBase - numVarArgs;
+
+			stackTop = newStackBase + numArgs;
 		}
 
 		private void GetTable( object obj, ref Value key, out Value value )
