@@ -231,9 +231,16 @@ namespace LuaSharp
 			if( len > int.MaxValue )
 				throw new InvalidDataException( "Can't load ENORMOUS string constant." );
 
+			len--;
+
 			var buf = String.InternalAllocBuffer( (int)len );
 			reader.BaseStream.Read( buf, String.BufferDataOffset, (int)len );
-			return String.InternalFinishBuffer( buf );
+			var ret = String.InternalFinishBuffer( buf );
+
+			if( reader.ReadByte() != 0 )
+				throw new InvalidDataException( "Malformed string constant - it's not null-terminated." );
+
+			return ret;
 		}
 
 		private static void SkipString( BinaryReader reader )
