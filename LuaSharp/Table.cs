@@ -144,8 +144,16 @@ namespace LuaSharp
 			return 0;
 		}
 
+		/// <summary>
+		/// Finds the key's location in the table (assumes we already
+		/// know the key won't be in the array part). Never returns
+		/// zero for nil values.
+		/// </summary>
+		/// <param name="key">The key to find.</param>
 		internal int FindValueInNodes( int key )
 		{
+			Debug.Assert( array == null || key > array.Length );
+
 			double dKey = key;
 
 			int i = GetMainPosition( dKey );
@@ -163,6 +171,7 @@ namespace LuaSharp
 
 		/// <summary>
 		/// Finds the key's location in the table (returns 0 if not found).
+		/// Note that the value at that key may be nil.
 		/// </summary>
 		internal int FindValue( String key )
 		{
@@ -182,6 +191,10 @@ namespace LuaSharp
 			return 0;
 		}
 
+		/// <summary>
+		/// Finds the key's location in the table (returns 0 if not found).
+		/// Note that the value at that key may be nil.
+		/// </summary>
 		internal int FindValue( Value key )
 		{
 			if( key.RefVal == null )
@@ -207,6 +220,10 @@ namespace LuaSharp
 			return 0;
 		}
 
+		/// <summary>
+		/// Finds the key's location in the table (returns 0 if not found).
+		/// Note that the value at that key may be nil.
+		/// </summary>
 		internal int FindValue( CompactValue key )
 		{
 			if( key.Val == null )
@@ -238,24 +255,24 @@ namespace LuaSharp
 
 		public bool ContainsKey( int key )
 		{
-			return FindValue( key ) != 0;
+			return !IsLocNilOrEmpty( FindValue( key ) );
 		}
 
 		public bool ContainsKey( String key )
 		{
-			return FindValue( key ) != 0;
+			return !IsLocNilOrEmpty( FindValue( key ) );
 		}
 
 		public bool ContainsKey( Value key )
 		{
-			return FindValue( key ) != 0;
+			return !IsLocNilOrEmpty( FindValue( key ) );
 		}
 
 		public bool TryGetValue( Value key, out Value value )
 		{
 			var loc = FindValue( key );
 
-			if( loc == 0 )
+			if( IsLocNilOrEmpty( loc ) )
 			{
 				value = Value.Nil;
 				return false;
@@ -281,7 +298,7 @@ namespace LuaSharp
 		public bool Remove( Value key )
 		{
 			var loc = FindValue( key );
-			if( loc == 0 )
+			if( IsLocNilOrEmpty( loc ) )
 				return false;
 
 			var nil = Value.Nil;
@@ -332,6 +349,11 @@ namespace LuaSharp
 			val.ToValue( out value );
 
 			return true;
+		}
+
+		internal bool IsLocNilOrEmpty( int loc )
+		{
+			return loc > 0 ? array[loc - 1].Val == null : loc == 0;
 		}
 
 		internal void WriteValue( int loc, ref Value val )
@@ -792,6 +814,76 @@ namespace LuaSharp
 #if DEBUG
 			isResizing = false;
 #endif
+		}
+
+		/// <summary>
+		/// Finds a boundary slot. A boundary slot is identified by an integer i
+		/// such that t[i] is non-nil and t[i + 1] is nil (and 0 if t[1] is nil).
+		/// </summary>
+		public int GetLen()
+		{
+			int low, high; //low is always 0 or a non-nil index
+
+			var array = this.array;
+			if( array != null )
+			{
+				high = array.Length;
+
+				if( array[high - 1].Val == null )
+				{
+					//there's a boundary in the array part, binsearch for it
+
+					low = 0;
+					while( high - low > 1 )
+					{
+						int m = (low + high) / 2;
+						if( array[m - 1].Val != null )
+							low = m;
+						else
+							high = m;
+					}
+
+					return low;
+				}
+				else if( nodes == EmptyNodes )
+					return high;
+			}
+			else
+			{
+				high = 0;
+			}
+
+			//search the nodes
+
+			low = high;
+			high++;
+
+			while( FindValueInNodes( high ) != 0 )
+			{
+				if( high > int.MaxValue / 2 )
+				{
+					//someone's not playing nice with the table construction, fall back to a linear search
+
+					int i = array != null ? array.Length : 1;
+					while( i > 0 && FindValueInNodes( i ) == 0 )
+						i++;
+					return i - 1;
+				}
+
+				low = high;
+				high *= 2;
+			}
+
+			while( high - low > 1 )
+			{
+				int m = (low + high) / 2;
+				if( FindValueInNodes( m ) != 0 )
+					low = m;
+				else
+					high = m;
+			}
+
+			return low;
 		}
 
 		#region Misc accessors

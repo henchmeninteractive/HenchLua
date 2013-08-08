@@ -899,6 +899,15 @@ namespace LuaSharp
 				return;
 			}
 
+			var asTable = val.RefVal as Table;
+			if( asTable != null )
+			{
+				ret.RefVal = Value.NumTypeTag;
+				ret.NumVal = asTable.GetLen();
+
+				return;
+			}
+
 			throw new NotImplementedException();
 		}
 
@@ -1129,7 +1138,8 @@ namespace LuaSharp
 					if( loc != 0 )
 					{
 						asTable.ReadValue( loc, out value );
-						return;
+						if( value.RefVal != null )
+							return;
 					}
 
 					metaTable = asTable.metaTable;

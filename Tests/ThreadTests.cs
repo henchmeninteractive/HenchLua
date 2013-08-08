@@ -144,6 +144,29 @@ namespace LuaSharp.Tests
 		}
 
 		[TestMethod]
+		public void TableLen()
+		{
+			var globals = new Table();
+			RunTestScriptWithGlobals( "TableLen.lua", globals, 42 );
+
+			var tableObj = globals["t"];
+
+			Assert.IsTrue( tableObj.ValueType == ValueType.Table );
+			var table = (Table)tableObj;
+
+			Assert.AreEqual( 5, table.GetLen() );
+
+			Assert.AreEqual( true, table[1] );
+			Assert.AreEqual( false, table[2] );
+			Assert.AreEqual( true, table[3] );
+			Assert.AreEqual( false, table[4] );
+			Assert.AreEqual( true, table[5] );
+
+			Assert.IsFalse( table.ContainsKey( 0 ) );
+			Assert.IsFalse( table.ContainsKey( 6 ) );
+		}
+
+		[TestMethod]
 		public void Callback1()
 		{
 			var thread = new Thread();
@@ -227,9 +250,14 @@ namespace LuaSharp.Tests
 
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
+			RunTestScriptWithGlobals( script, new Table(), expectedResults );
+		}
+
+		private static void RunTestScriptWithGlobals( string script, Table globals, params Value[] expectedResults )
+		{
 			var thread = new Thread();
 
-			var func = Helpers.LoadFunc( "Thread/" + script, new Table() );
+			var func = Helpers.LoadFunc( "Thread/" + script, globals );
 			Function.Optimize( func );
 
 			thread.Call( func, 0, Thread.CallReturnAll );
