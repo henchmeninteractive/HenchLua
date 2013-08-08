@@ -58,7 +58,7 @@ namespace LuaSharp
 			var stk = l.Stack;
 
 			var mt = GetMetaTable( stk[1] );
-			if( mt != null && mt.Contains( Literals.TagInfo_Metatable ) )
+			if( mt != null && mt.ContainsKey( Literals.TagInfo_Metatable ) )
 				throw new ArgumentException( "Can't change a protected metatable." );
 
 			mt = stk[2].ToTable();

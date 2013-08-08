@@ -234,20 +234,75 @@ namespace LuaSharp
 
 		#endregion
 
-		public bool Contains( int key )
+		#region Some methods to make this look a little more like a .NET dictionary
+
+		public bool ContainsKey( int key )
 		{
 			return FindValue( key ) != 0;
 		}
 
-		public bool Contains( String key )
+		public bool ContainsKey( String key )
 		{
 			return FindValue( key ) != 0;
 		}
 
-		public bool Contains( Value key )
+		public bool ContainsKey( Value key )
 		{
 			return FindValue( key ) != 0;
 		}
+
+		public bool TryGetValue( Value key, out Value value )
+		{
+			var loc = FindValue( key );
+
+			if( loc == 0 )
+			{
+				value = Value.Nil;
+				return false;
+			}
+
+			ReadValue( loc, out value );
+			return true;
+		}
+
+		public void Add( Value key, Value value )
+		{
+			if( key.RefVal == null )
+				throw new ArgumentNullException( "Key is nil." );
+
+			var loc = FindValue( key );
+			if( loc != 0 )
+				throw new ArgumentException( "An element with that key already exists." );
+
+			loc = InsertNewKey( new CompactValue( key ) );
+			WriteValue( loc, ref value );
+		}
+
+		public bool Remove( Value key )
+		{
+			var loc = FindValue( key );
+			if( loc == 0 )
+				return false;
+
+			var nil = Value.Nil;
+			WriteValue( loc, ref nil );
+
+			return true;
+		}
+
+		public void Clear()
+		{
+			if( array != null )
+				Array.Clear( array, 0, array.Length );
+
+			if( nodes != EmptyNodes )
+			{
+				for( int i = 0; i < nodes.Length; i++ )
+					nodes[i] = new Node() { Next = -1 };
+			}
+		}
+
+		#endregion
 
 		/// <summary>
 		/// Take care not to clone the returned value, as you may
