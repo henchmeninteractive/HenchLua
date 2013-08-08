@@ -29,7 +29,7 @@ namespace LuaSharp.Tests
 		public void TwoSimpleCalls()
 		{
 			var thread = new Thread();
-			var func = Helpers.LoadFunc( "Call.lua", new Table() );
+			var func = Helpers.LoadFunc( "Thread/Call.lua", new Table() );
 
 			thread.Call( func, 0, 1 );
 
@@ -137,7 +137,7 @@ namespace LuaSharp.Tests
 			var thread = new Thread();
 
 			var globals = new Table();
-			var func = Helpers.LoadFunc( "Callback.lua", globals );
+			var func = Helpers.LoadFunc( "Thread/Callback.lua", globals );
 
 			int numCallbacks = 0;
 			globals[new String( "callback" )] = (Callable)(l =>
@@ -160,7 +160,7 @@ namespace LuaSharp.Tests
 			var thread = new Thread();
 
 			var globals = new Table();
-			var func = Helpers.LoadFunc( "Callback.lua", globals );
+			var func = Helpers.LoadFunc( "Thread/Callback.lua", globals );
 
 			var fn = new CallbackFunc();
 			globals[new String( "callback" )] = (Callable)fn;
@@ -190,7 +190,7 @@ namespace LuaSharp.Tests
 			var thread = new Thread();
 
 			var globals = new Table();
-			var func = Helpers.LoadFunc( "CallbackReturn.lua", globals );
+			var func = Helpers.LoadFunc( "Thread/CallbackReturn.lua", globals );
 
 			int numCallbacks = 0;
 			globals[new String( "callback" )] = (Callable)(l =>
@@ -216,8 +216,8 @@ namespace LuaSharp.Tests
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			var thread = new Thread();
-			
-			var func = Helpers.LoadFunc( script, new Table() );
+
+			var func = Helpers.LoadFunc( "Thread/" + script, new Table() );
 			Function.Optimize( func );
 
 			thread.Call( func, 0, Thread.CallReturnAll );

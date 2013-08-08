@@ -234,6 +234,21 @@ namespace LuaSharp
 
 		#endregion
 
+		public bool Contains( int key )
+		{
+			return FindValue( key ) != 0;
+		}
+
+		public bool Contains( String key )
+		{
+			return FindValue( key ) != 0;
+		}
+
+		public bool Contains( Value key )
+		{
+			return FindValue( key ) != 0;
+		}
+
 		/// <summary>
 		/// Take care not to clone the returned value, as you may
 		/// accidentally turn a number into a reference type!
@@ -753,5 +768,8 @@ namespace LuaSharp
 		}
 
 		#endregion
+
+		internal Table metaTable;
+		public Table MetaTable { get { return metaTable; } set { metaTable = value; } }
 	}
 }

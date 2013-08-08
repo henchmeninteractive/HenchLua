@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LuaSharp
 {
-	internal static class TypeInfo
+	public static class Literals
 	{
 		public static readonly String VersionName = new String( "Lua 5.2" );
 
@@ -36,7 +36,7 @@ namespace LuaSharp
 			TypeName_Function,
 			TypeName_Thread,
 		};
-
+	
 		public static readonly String TagMethod_Index = new String( "__index" );
 		public static readonly String TagMethod_NewIndex = new String( "__newindex" );
 		public static readonly String TagMethod_Gc = new String( "__gc" );
@@ -55,10 +55,12 @@ namespace LuaSharp
 		public static readonly String TagMethod_Concat = new String( "__concat" );
 		public static readonly String TagMethod_Call = new String( "__call" );
 
+		public static readonly String TagInfo_Metatable = new String( "__metatable" );
+
 		/// <summary>
 		/// In the same order as <see cref="TagMethods"/>.
 		/// </summary>
-		public static readonly String[] TagMethodNames =
+		internal static readonly String[] TagMethodNames =
 		{
 			TagMethod_Index,
 			TagMethod_NewIndex,

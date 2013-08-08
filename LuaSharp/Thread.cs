@@ -278,8 +278,7 @@ namespace LuaSharp
 						Value upVal;
 						ReadUpValue( ref upValues[op.B], out upVal );
 
-						var table = (Table)upVal.RefVal;
-						GetTable( table, ref key, out stack[stackBase + op.A] );
+						GetTable( upVal, ref key, out stack[stackBase + op.A] );
 					}
 					break;
 
@@ -290,7 +289,7 @@ namespace LuaSharp
 							consts[c & ~Instruction.BitK] :
 							stack[stackBase + c];
 
-						GetTable( stack[stackBase + op.B].RefVal,
+						GetTable( stack[stackBase + op.B],
 							ref key, out stack[stackBase + op.A] );
 					}
 					break;
@@ -310,8 +309,7 @@ namespace LuaSharp
 						Value upVal;
 						ReadUpValue( ref upValues[op.A], out upVal );
 
-						var table = (Table)upVal.RefVal;
-						SetTable( table, ref key, ref value );
+						SetTable( upVal.RefVal, ref key, ref value );
 					}
 					break;
 
@@ -348,7 +346,7 @@ namespace LuaSharp
 				case OpCode.Self:
 					{
 						stack[stackBase + op.A + 1] = stack[stackBase + op.B];
-						var table = stack[stackBase + op.B].RefVal;
+						var table = stack[stackBase + op.B];
 
 						int c = op.C;
 						var key = (c & Instruction.BitK) != 0 ?
@@ -378,7 +376,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Add, b.RefVal, c.RefVal,
+							DoArith( Literals.TagMethod_Add, b.RefVal, c.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -403,7 +401,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Sub, b.RefVal, c.RefVal,
+							DoArith( Literals.TagMethod_Sub, b.RefVal, c.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -428,7 +426,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Mul, b.RefVal, c.RefVal,
+							DoArith( Literals.TagMethod_Mul, b.RefVal, c.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -453,7 +451,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Div, b.RefVal, c.RefVal,
+							DoArith( Literals.TagMethod_Div, b.RefVal, c.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -479,7 +477,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Mod, b.RefVal, c.RefVal,
+							DoArith( Literals.TagMethod_Mod, b.RefVal, c.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -504,7 +502,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Add, b.RefVal, c.RefVal,
+							DoArith( Literals.TagMethod_Add, b.RefVal, c.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -523,7 +521,7 @@ namespace LuaSharp
 						}
 						else
 						{
-							DoArith( TypeInfo.TagMethod_Unm, b.RefVal, b.RefVal,
+							DoArith( Literals.TagMethod_Unm, b.RefVal, b.RefVal,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -1003,14 +1001,46 @@ namespace LuaSharp
 			stackTop = newStackBase + numArgs;
 		}
 
-		private void GetTable( object obj, ref Value key, out Value value )
+		private void GetTable( Value obj, ref Value key, out Value value )
 		{
-			//ToDo: this should be a full get
+			for( int i = 0; i < 100; i++ )
+			{
+				Table metaTable;
 
-			var table = obj as Table;
+				var asTable = obj.RefVal as Table;
+				if( asTable != null )
+				{
+					int loc = asTable.FindValue( key );
+					if( loc != 0 )
+					{
+						asTable.ReadValue( loc, out value );
+						return;
+					}
 
-			int loc = table.FindValue( key );
-			table.ReadValue( loc, out value );
+					metaTable = asTable.metaTable;
+
+					if( metaTable == null )
+					{
+						value = Value.Nil;
+						return;
+					}
+				}
+				else
+				{
+					throw new InvalidOperandException( "Attempting to index an invalid value." );
+				}
+
+				var index = metaTable[Literals.TagMethod_Index];
+
+				if( Callable.IsCallable( index.RefVal ) )
+				{
+					throw new NotImplementedException();
+				}
+
+				obj = index;				
+			}
+
+			throw new LuaException( "Metatable __index loop." );
 		}
 
 		private void SetTable( object obj, ref Value key, ref Value value )

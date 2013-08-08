@@ -58,6 +58,7 @@
     <Compile Include="TableTests.cs" />
     <Compile Include="ProtoTests.cs" />
     <Compile Include="ThreadTests.cs" />
+    <Compile Include="MetaTableTestss.cs" />
     <Compile Include="ValueTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -74,58 +75,67 @@
     <Content Include="lua.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Scripts\Call.lua">
+    <None Include="Scripts\MetaTable\Index2.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\ClosedUpValue.lua">
+    <None Include="Scripts\MetaTable\Index.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\ClosedUpValue2.lua">
+    <None Include="Scripts\Thread\Call.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\ClosedUpValue3.lua">
+    <None Include="Scripts\Thread\ClosedUpValue.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\Callback.lua">
+    <None Include="Scripts\Thread\ClosedUpValue2.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\CallbackReturn.lua">
+    <None Include="Scripts\Thread\ClosedUpValue3.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\If4.lua">
+    <None Include="Scripts\Thread\Callback.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\If3.lua">
+    <None Include="Scripts\Thread\CallbackReturn.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\If2.lua">
+    <None Include="Scripts\MetaTable\SetMetaTable.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\If.lua">
+    <None Include="Scripts\Thread\If4.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\SimpleLoop4.lua">
+    <None Include="Scripts\Thread\If3.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\SimpleLoop3.lua">
+    <None Include="Scripts\Thread\If2.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\SimpleLoop2.lua">
+    <None Include="Scripts\Thread\If.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\SimpleLoop.lua">
+    <None Include="Scripts\Thread\SimpleLoop4.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\SimpleUpValue.lua">
+    <None Include="Scripts\Thread\SimpleLoop3.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\TailCall.lua">
+    <None Include="Scripts\Thread\SimpleLoop2.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\Vararg.lua">
+    <None Include="Scripts\Thread\SimpleLoop.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Scripts\MathChunk.lua">
+    <None Include="Scripts\Thread\SimpleUpValue.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Scripts\Thread\TailCall.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Scripts\Thread\Vararg.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Scripts\Thread\MathChunk.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="Scripts\test.luab">

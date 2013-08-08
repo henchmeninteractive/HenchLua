@@ -32,7 +32,11 @@ namespace LuaSharp
 		public String( string str, Encoding encoding )
 		{
 			if( str == null )
-				throw new ArgumentNullException( "str" );
+			{
+				InternalData = null;
+				return;
+			}
+
 			if( encoding == null )
 				throw new ArgumentNullException( "encoding" );
 
@@ -44,7 +48,6 @@ namespace LuaSharp
 			UpdateHashCode();
 		}
 
-
 		/// <summary>
 		/// Initializes a String from a .NET String using UTF8.
 		/// </summary>
@@ -52,6 +55,11 @@ namespace LuaSharp
 		public String( string str )
 			: this( str, Encoding.UTF8 )
 		{
+		}
+
+		public static implicit operator String( string str )
+		{
+			return new String( str );
 		}
 
 		/// <summary>

@@ -39,12 +39,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseLib.cs" />
     <Compile Include="Box.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="Function.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Instruction.cs" />
-    <Compile Include="TypeInfo.cs" />
+    <Compile Include="Literals.cs" />
     <Compile Include="Proto.cs" />
     <Compile Include="String.cs" />
     <Compile Include="Table.cs" />
