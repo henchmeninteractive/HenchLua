@@ -810,4 +810,44 @@ namespace LuaSharp
 			return ToValue().ToString();
 		}
 	}
+
+	public interface IHasMetatable
+	{
+		Table Metatable { get; }
+	}
+
+	public static class MetatableHelpers
+	{
+		public static Table GetMetatable( this Table table )
+		{
+			if( table == null )
+				throw new ArgumentNullException( "table" );
+
+			return table.metatable;
+		}
+
+		public static Table GetMetatable( this IHasMetatable obj )
+		{
+			if( obj == null )
+				throw new ArgumentNullException( "obj" );
+			
+			return obj.Metatable;
+		}
+
+		public static Table GetMetatable( object obj )
+		{
+			if( obj == null )
+				throw new ArgumentNullException( "obj" );
+
+			var asTable = obj as Table;
+			if( asTable != null )
+				return asTable.metatable;
+
+			var asHasMt = obj as IHasMetatable;
+			if( asHasMt != null )
+				return asHasMt.Metatable;
+
+			return null;
+		}
+	}
 }

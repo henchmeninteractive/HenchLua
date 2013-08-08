@@ -886,6 +886,8 @@ namespace LuaSharp
 			return low;
 		}
 
+		#region GetNext, Enumerator, IEnumerable
+
 		public bool GetNext( ref Value key, out Value value )
 		{
 			int loc;
@@ -908,7 +910,7 @@ namespace LuaSharp
 
 				loc = -loc - 1;
 				loc++;
-			
+
 				//and scan
 
 				goto scanNodes;
@@ -950,7 +952,7 @@ namespace LuaSharp
 
 				nodes[loc].Key.ToValue( out key );
 				nodes[loc].Value.ToValue( out value );
-				
+
 				return true;
 			}
 
@@ -958,8 +960,6 @@ namespace LuaSharp
 			value = new Value();
 			return false;
 		}
-
-		#region Enumerator, IEnumerable
 
 		public struct Enumerator : IEnumerator<KeyValuePair<Value, Value>>
 		{
@@ -1064,7 +1064,7 @@ namespace LuaSharp
 
 		#endregion
 
-		internal Table metaTable;
-		public Table MetaTable { get { return metaTable; } set { metaTable = value; } }
+		internal Table metatable;
+		public Table Metatable { get { return metatable; } set { metatable = value; } }
 	}
 }

@@ -1142,17 +1142,17 @@ namespace LuaSharp
 							return;
 					}
 
-					metaTable = asTable.metaTable;
-
-					if( metaTable == null )
-					{
-						value = Value.Nil;
-						return;
-					}
+					metaTable = asTable.metatable;
 				}
 				else
 				{
-					throw new InvalidOperandException( "Attempting to index an invalid value." );
+					metaTable = GetMetatable( ref obj );
+				}
+
+				if( metaTable == null )
+				{
+					value = Value.Nil;
+					return;
 				}
 
 				var index = metaTable[Literals.TagMethod_Index];
@@ -1181,6 +1181,19 @@ namespace LuaSharp
 				loc = table.InsertNewKey( new CompactValue( key ) );
 
 			table.WriteValue( loc, ref value );
+		}
+
+		private Table GetMetatable( ref Value val )
+		{
+			var asTable = val.RefVal as Table;
+			if( asTable != null )
+				return asTable.metatable;
+
+			var asHasMt = val.RefVal as IHasMetatable;
+			if( asHasMt != null )
+				return asHasMt.Metatable;
+
+			return null;
 		}
 
 		private bool ToNumber( ref Value val )

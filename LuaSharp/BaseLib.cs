@@ -13,15 +13,15 @@ namespace LuaSharp
 
 		public static void SetBaseMethods( Table globals )
 		{
-			globals[Name_BGetMetaTable] = (Callable)BGetMetaTable;
-			globals[Name_BSetMetaTable] = (Callable)BSetMetaTable;
+			globals[Name_BGetMetaTable] = (Callable)BGetMetatable;
+			globals[Name_BSetMetaTable] = (Callable)BSetMetatable;
 		}
 
-		private static int BGetMetaTable( Thread l )
+		private static int BGetMetatable( Thread l )
 		{
 			var stk = l.Stack;
 
-			var mt = GetMetaTable( stk[1] );
+			var mt = GetMetatable( stk[1] );
 			
 			Value vmt;
 
@@ -44,20 +44,20 @@ namespace LuaSharp
 			return 1;			
 		}
 
-		private static Table GetMetaTable( Value value )
+		private static Table GetMetatable( Value value )
 		{
 			var asTable = value.ToTable();
 			if( asTable != null )
-				return asTable.MetaTable;
+				return asTable.Metatable;
 
 			throw new ArgumentException( "Expected a table or user data." );
 		}
 
-		private static int BSetMetaTable( Thread l )
+		private static int BSetMetatable( Thread l )
 		{
 			var stk = l.Stack;
 
-			var mt = GetMetaTable( stk[1] );
+			var mt = GetMetatable( stk[1] );
 			if( mt != null && mt.ContainsKey( Literals.TagInfo_Metatable ) )
 				throw new ArgumentException( "Can't change a protected metatable." );
 
@@ -65,22 +65,22 @@ namespace LuaSharp
 			if( mt == null )
 				throw new ArgumentException( "Expected a table." );
 
-			SetMetaTable( stk[1], mt );
+			SetMetatable( stk[1], mt );
 			stk.Top = 1;
 
 			return 1;
 		}
 
-		private static void SetMetaTable( Value value, Table mt )
+		private static void SetMetatable( Value value, Table mt )
 		{
 			var asTable = value.ToTable();
 			if( asTable != null )
 			{
-				asTable.MetaTable = mt;
+				asTable.metatable = mt;
 				return;
 			}
 
-			throw new ArgumentException( "Expected a table or user data." );
+			throw new ArgumentException( "Expected a table value." );
 		}
 	}
 }
