@@ -343,5 +343,123 @@ namespace LuaSharp.Tests
 				Assert.AreEqual( i, Helpers.Expose( nodBox ).Value );
 			}
 		}
+
+		[TestMethod]
+		public void NextTest_AllIntKeys()
+		{
+			var t = new Table( 110, 0 );
+
+			for( int i = 0; i < 100; i++ )
+			{
+				double x = i;
+				t[x] = -x;
+			}
+
+			int n = 0;
+			for( Value v, k = new Value(); t.GetNext( ref k, out v ); )
+			{
+				Assert.AreEqual( ValueType.Number, k.ValueType );
+				Assert.AreEqual( ValueType.Number, v.ValueType );
+
+				Assert.AreEqual( -k.ToDouble(), v.ToDouble() );
+
+				n++;
+			}
+
+			Assert.AreEqual( 100, n );
+
+			n = 0;
+			foreach( var p in t )
+			{
+				Assert.AreEqual( ValueType.Number, p.Key.ValueType );
+				Assert.AreEqual( ValueType.Number, p.Value.ValueType );
+
+				Assert.AreEqual( -p.Key.ToDouble(), p.Value.ToDouble() );
+
+				n++;
+			}
+
+			Assert.AreEqual( 100, n );
+		}
+
+		[TestMethod]
+		public void NextTest_AllNodeKeys()
+		{
+			var t = new Table( 0, 130 );
+
+			for( int i = 0; i < 100; i++ )
+			{
+				double x = i * Math.PI;
+				t[x] = -x;
+			}
+
+			int n = 0;
+			for( Value v, k = new Value(); t.GetNext( ref k, out v ); )
+			{
+				Assert.AreEqual( ValueType.Number, k.ValueType );
+				Assert.AreEqual( ValueType.Number, v.ValueType );
+
+				Assert.AreEqual( -k.ToDouble(), v.ToDouble() );
+
+				n++;
+			}
+
+			Assert.AreEqual( 100, n );
+
+			n = 0;
+			foreach( var p in t )
+			{
+				Assert.AreEqual( ValueType.Number, p.Key.ValueType );
+				Assert.AreEqual( ValueType.Number, p.Value.ValueType );
+
+				Assert.AreEqual( -p.Key.ToDouble(), p.Value.ToDouble() );
+
+				n++;
+			}
+
+			Assert.AreEqual( 100, n );
+		}
+
+		[TestMethod]
+		public void NextTest_MixedKeys()
+		{
+			var t = new Table( 100, 64 );
+
+			for( int i = 0; i < 100; i++ )
+			{
+				double x = i;
+
+				if( i % 2 == 0 )
+					x *= Math.PI;
+
+				t[x] = -x;
+			}
+
+			int n = 0;
+			for( Value v, k = new Value(); t.GetNext( ref k, out v ); )
+			{
+				Assert.AreEqual( ValueType.Number, k.ValueType );
+				Assert.AreEqual( ValueType.Number, v.ValueType );
+
+				Assert.AreEqual( -k.ToDouble(), v.ToDouble() );
+
+				n++;
+			}
+
+			Assert.AreEqual( 100, n );
+
+			n = 0;
+			foreach( var p in t )
+			{
+				Assert.AreEqual( ValueType.Number, p.Key.ValueType );
+				Assert.AreEqual( ValueType.Number, p.Value.ValueType );
+
+				Assert.AreEqual( -p.Key.ToDouble(), p.Value.ToDouble() );
+
+				n++;
+			}
+
+			Assert.AreEqual( 100, n );
+		}
 	}
 }

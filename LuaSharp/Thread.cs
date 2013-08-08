@@ -156,7 +156,7 @@ namespace LuaSharp
 			}
 		}
 
-		private CallInfo call; //the top of the call stack
+		private CallInfo call = new CallInfo() { StackTop = -1 }; //the top of the call stack
 		private CallInfo[] callInfos = new CallInfo[16]; //the rest of the call stack
 		private int numCallInfos; //the number of items in the call stack
 		

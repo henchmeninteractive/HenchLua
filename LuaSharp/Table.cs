@@ -8,7 +8,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace LuaSharp
 {
-	public class Table
+	public class Table : IEnumerable<KeyValuePair<Value, Value>>
 	{
 		public Table()
 		{
@@ -885,6 +885,154 @@ namespace LuaSharp
 
 			return low;
 		}
+
+		public bool GetNext( ref Value key, out Value value )
+		{
+			int loc;
+
+			if( key.RefVal != null )
+			{
+				loc = FindValue( key );
+				if( loc == 0 )
+					throw new ArgumentException( "Invalid key passed to GetNext." );
+			}
+			else
+			{
+				loc = 0;
+			}
+
+			if( loc < 0 )
+			{
+				//the value's found at loc, get the real
+				//index and advance to the next node
+
+				loc = -loc - 1;
+				loc++;
+			
+				//and scan
+
+				goto scanNodes;
+			}
+			else if( loc > 0 || array != null )
+			{
+				//the next key's in the array part
+
+				//note that because of how FindValue encodes its
+				//result, loc is already one past of the index of
+				//the key (that is, it points to the next key)
+
+				for( ; loc < array.Length; loc++ )
+				{
+					var val = array[loc];
+
+					if( val.Val != null )
+					{
+						key.RefVal = Value.NumTypeTag;
+						key.NumVal = loc + 1;
+
+						val.ToValue( out value );
+
+						return true;
+					}
+				}
+
+				//we've run off the end of the array, start on the nodes
+			}
+
+			loc = 0;
+
+		scanNodes:
+
+			for( ; loc < nodes.Length; loc++ )
+			{
+				if( nodes[loc].Value.Val == null )
+					continue;
+
+				nodes[loc].Key.ToValue( out key );
+				nodes[loc].Value.ToValue( out value );
+				
+				return true;
+			}
+
+			//found nothing
+			value = new Value();
+			return false;
+		}
+
+		#region Enumerator, IEnumerable
+
+		public struct Enumerator : IEnumerator<KeyValuePair<Value, Value>>
+		{
+			internal Enumerator( Table owner )
+			{
+				this.owner = owner;
+				key = value = new Value();
+			}
+
+			private Table owner;
+			private Value key, value;
+
+			#region IEnumerator<KeyValuePair<Value,Value>> Members
+
+			public KeyValuePair<Value, Value> Current
+			{
+				get { return new KeyValuePair<Value, Value>( key, value ); }
+			}
+
+			#endregion
+
+			#region IDisposable Members
+
+			public void Dispose()
+			{
+			}
+
+			#endregion
+
+			#region IEnumerator Members
+
+			object System.Collections.IEnumerator.Current
+			{
+				get { return new KeyValuePair<Value, Value>( key, value ); }
+			}
+
+			public bool MoveNext()
+			{
+				return owner.GetNext( ref key, out value );
+			}
+
+			public void Reset()
+			{
+				key = value = new Value();
+			}
+
+			#endregion
+		}
+
+		public Enumerator GetEnumerator()
+		{
+			return new Enumerator( this );
+		}
+
+		#region IEnumerable<KeyValuePair<Value,Value>> Members
+
+		IEnumerator<KeyValuePair<Value, Value>> IEnumerable<KeyValuePair<Value, Value>>.GetEnumerator()
+		{
+			return new Enumerator( this );
+		}
+
+		#endregion
+
+		#region IEnumerable Members
+
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+		{
+			return new Enumerator( this );
+		}
+
+		#endregion
+
+		#endregion
 
 		#region Misc accessors
 
