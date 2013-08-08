@@ -163,6 +163,7 @@ namespace LuaSharp
 		private struct CallInfo
 		{
 			public int StackBase;
+			public int StackTop;
 
 			/// <summary>
 			/// The currently executing op.
@@ -543,7 +544,8 @@ namespace LuaSharp
 					throw new NotImplementedException();
 
 				case OpCode.Concat:
-					throw new NotImplementedException();
+					DoConcat( stackBase + op.B, op.C - op.B + 1, out stack[stackBase + op.A] );
+					break;
 
 				case OpCode.Jmp:
 					{
@@ -891,6 +893,79 @@ namespace LuaSharp
 			}
 		}
 
+		private void DoConcat( int index, int count, out Value ret )
+		{
+			Debug.Assert( count >= 2 );
+
+			int top = index + count;
+
+			do
+			{
+				int numCat = 2;
+
+				if( !ValToStr( ref stack[top - 1] ) ||
+					!ValToStr( ref stack[top - 2] ) )
+				{
+					throw new NotImplementedException();
+				}
+				else
+				{
+					//top two values are strings
+					//see if we have more
+
+					int total =
+						(stack[top - 1].RefVal as byte[]).Length +
+						(stack[top - 2].RefVal as byte[]).Length;
+
+					while( numCat < count )
+					{
+						int idx = top - numCat - 1;
+
+						if( !ValToStr( ref stack[idx] ) )
+							break;
+
+						total += (stack[idx].RefVal as byte[]).Length;
+						numCat++;
+					}
+
+					total -= numCat * String.BufferDataOffset;
+
+					var catBuf = String.InternalAllocBuffer( total );
+					
+					for( int o = String.BufferDataOffset, i = 0; i < numCat; i++ )
+					{
+						var str = stack[top - numCat + i].RefVal as byte[];
+						var len = str.Length - String.BufferDataOffset;
+
+						Array.Copy( str, String.BufferDataOffset, catBuf, o, len );
+
+						o += len;
+					}
+
+					var catStr = String.InternalFinishBuffer( catBuf );
+
+					stack[top - numCat].RefVal = catStr.InternalData;
+				}
+
+				count -= numCat - 1; //numCat string sturned into 1
+				top -= numCat - 1;
+			}
+			while( count != 1 );
+
+			ret = stack[index];
+		}
+
+		private bool ValToStr( ref Value val )
+		{
+			if( val.RefVal is byte[] )
+				return true;
+
+			if( val.RefVal == Value.NumTypeTag )
+				throw new NotImplementedException();
+
+			return false;
+		}
+
 		private void ExecuteUserCode()
 		{
 			int numRet = CallUserCode();
@@ -990,6 +1065,7 @@ namespace LuaSharp
 
 			call.Callable = callable;
 			call.StackBase = newStackBase;
+			call.StackTop = proto != null ? newStackBase + proto.MaxStack : -1;
 
 			call.PC = 0;
 
@@ -999,6 +1075,28 @@ namespace LuaSharp
 			call.VarArgsIndex = newStackBase - numVarArgs;
 
 			stackTop = newStackBase + numArgs;
+		}
+
+		private void CallMetaMethod( object metaMethod, ref Value arg0, ref Value arg1, out Value ret )
+		{
+			int saveTop = stackTop;
+
+			int stackBase = call.StackTop != -1 ? call.StackTop : stackTop;
+			CheckStack( stackBase + 3 );
+
+			stack[stackBase].RefVal = metaMethod;
+			stack[stackBase + 1] = arg0;
+			stack[stackBase + 2] = arg1;
+
+			BeginCall( stackBase, 2, 1 );
+
+			Execute();
+
+			ret = stack[stackBase];
+
+			PopCallInfo();
+
+			stackTop = saveTop;
 		}
 
 		private void GetTable( Value obj, ref Value key, out Value value )
@@ -1034,7 +1132,8 @@ namespace LuaSharp
 
 				if( Callable.IsCallable( index.RefVal ) )
 				{
-					throw new NotImplementedException();
+					CallMetaMethod( index.RefVal, ref obj, ref key, out value );
+					return;
 				}
 
 				obj = index;				
@@ -1072,6 +1171,10 @@ namespace LuaSharp
 
 		private bool Equal( ref Value a, ref Value b )
 		{
+			var asStr = a.RefVal as byte[];
+			if( asStr != null )
+				return String.InternalEquals( asStr, b.RefVal as byte[] );
+
 			throw new NotImplementedException();
 		}
 

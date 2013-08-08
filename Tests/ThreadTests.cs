@@ -20,6 +20,12 @@ namespace LuaSharp.Tests
 		}
 
 		[TestMethod]
+		public void Concat()
+		{
+			RunTestScript( "Concat.lua", new String( "abcabbcab-LOMG-bc" ) );
+		}
+
+		[TestMethod]
 		public void SimpleCall()
 		{
 			RunTestScript( "Call.lua", 42 );
