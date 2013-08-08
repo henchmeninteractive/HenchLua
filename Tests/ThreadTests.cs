@@ -138,6 +138,12 @@ namespace LuaSharp.Tests
 		}
 
 		[TestMethod]
+		public void StrLen()
+		{
+			RunTestScript( "StrLen.lua", 42 );
+		}
+
+		[TestMethod]
 		public void Callback1()
 		{
 			var thread = new Thread();

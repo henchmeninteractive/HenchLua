@@ -187,19 +187,6 @@ namespace LuaSharp
 			public int ResultCount;
 		}
 
-		private void PushCallInfo()
-		{
-			if( numCallInfos == callInfos.Length )
-				Array.Resize( ref callInfos, callInfos.Length + 16 );
-			callInfos[numCallInfos++] = call;
-		}
-
-		private void PopCallInfo()
-		{
-			Debug.Assert( numCallInfos != 0 );
-			call = callInfos[--numCallInfos];
-		}
-
 		/// <summary>
 		/// Runs the code at the top of the callstack.
 		/// </summary>
@@ -541,7 +528,15 @@ namespace LuaSharp
 					break;
 
 				case OpCode.Len:
-					throw new NotImplementedException();
+					{
+						var ib = op.B;
+						var b = (ib & Instruction.BitK) != 0 ?
+							consts[ib & ~Instruction.BitK] :
+							stack[stackBase + ib];
+
+						DoGetLen( ref b, out stack[stackBase + op.A] );
+					}
+					break;
 
 				case OpCode.Concat:
 					DoConcat( stackBase + op.B, op.C - op.B + 1, out stack[stackBase + op.A] );
@@ -702,7 +697,7 @@ namespace LuaSharp
 
 						Execute();
 
-						PopCallInfo();
+						EndCall();
 					}
 					break;
 
@@ -728,7 +723,7 @@ namespace LuaSharp
 
 						Execute();
 
-						PopCallInfo();
+						EndCall();
 
 						pc = code.Length;
 					}
@@ -891,6 +886,20 @@ namespace LuaSharp
 					throw new InvalidBytecodeException();
 				}
 			}
+		}
+
+		private void DoGetLen( ref Value val, out Value ret )
+		{
+			var asStr = val.RefVal as byte[];
+			if( asStr != null )
+			{
+				ret.RefVal = Value.NumTypeTag;
+				ret.NumVal = asStr.Length - String.BufferDataOffset;
+
+				return;
+			}
+
+			throw new NotImplementedException();
 		}
 
 		private void DoConcat( int index, int count, out Value ret )
@@ -1061,7 +1070,9 @@ namespace LuaSharp
 					stack[newStackBase + i].RefVal = null;
 			}
 
-			PushCallInfo();
+			if( numCallInfos == callInfos.Length )
+				Array.Resize( ref callInfos, callInfos.Length + 16 );
+			callInfos[numCallInfos++] = call;
 
 			call.Callable = callable;
 			call.StackBase = newStackBase;
@@ -1075,6 +1086,12 @@ namespace LuaSharp
 			call.VarArgsIndex = newStackBase - numVarArgs;
 
 			stackTop = newStackBase + numArgs;
+		}
+
+		private void EndCall()
+		{
+			Debug.Assert( numCallInfos != 0 );
+			call = callInfos[--numCallInfos];
 		}
 
 		private void CallMetaMethod( object metaMethod, ref Value arg0, ref Value arg1, out Value ret )
@@ -1094,7 +1111,7 @@ namespace LuaSharp
 
 			ret = stack[stackBase];
 
-			PopCallInfo();
+			EndCall();
 
 			stackTop = saveTop;
 		}
@@ -1400,7 +1417,7 @@ namespace LuaSharp
 
 			if( numResults != CallReturnAll && call.ResultIndex + numResults > stack.Length )
 			{
-				PopCallInfo();
+				EndCall();
 				throw new ArgumentOutOfRangeException( "numArgs", "The function call would overflow the stack." );
 			}
 
@@ -1409,7 +1426,7 @@ namespace LuaSharp
 			if( numResults != CallReturnAll )
 				stackTop = call.ResultIndex + numResults;
 
-			PopCallInfo();
+			EndCall();
 		}
 
 		public void Call( Callable func, int numArgs, int numResults )
