@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace LuaSharp.Tests
+namespace HenchLua.Tests
 {
 	[TestClass]
 	public class MetaTableTestss

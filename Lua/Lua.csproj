@@ -48,9 +48,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LuaSharp\LuaSharp.csproj">
+    <ProjectReference Include="..\HenchLua\HenchLua.csproj">
       <Project>{bf04e3f0-c8c1-4b68-b88e-022e334486dc}</Project>
-      <Name>LuaSharp</Name>
+      <Name>HenchLua</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

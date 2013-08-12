@@ -66,9 +66,9 @@
       <Project>{b42ee1c7-0b53-42c9-b362-945a2df52173}</Project>
       <Name>ExposedObject</Name>
     </ProjectReference>
-    <ProjectReference Include="..\LuaSharp\LuaSharp.csproj">
+    <ProjectReference Include="..\HenchLua\HenchLua.csproj">
       <Project>{bf04e3f0-c8c1-4b68-b88e-022e334486dc}</Project>
-      <Name>LuaSharp</Name>
+      <Name>HenchLua</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

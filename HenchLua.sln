@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2012 for Windows Desktop
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LuaSharp", "LuaSharp\LuaSharp.csproj", "{BF04E3F0-C8C1-4B68-B88E-022E334486DC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HenchLua", "HenchLua\HenchLua.csproj", "{BF04E3F0-C8C1-4B68-B88E-022E334486DC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lua", "Lua\Lua.csproj", "{82690FC8-D2FF-40B6-97DB-33FA054FFA16}"
 EndProject

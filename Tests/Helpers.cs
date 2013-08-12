@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using IgorO.ExposedObjectProject;
 
-namespace LuaSharp.Tests
+namespace HenchLua.Tests
 {
 	internal static class Helpers
 	{

@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-using Debug = System.Diagnostics.Debug;
-
-namespace LuaSharp
+namespace HenchLua
 {
 	internal class Proto : Function
 	{

@@ -4,7 +4,7 @@ using System.Text;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace LuaSharp.Tests
+namespace HenchLua.Tests
 {
 	[TestClass]
 	public class StringTests
