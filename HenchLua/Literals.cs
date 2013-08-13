@@ -1,4 +1,4 @@
-﻿namespace HenchLua
+﻿namespace Henchmen.Lua
 {
 	public static class Literals
 	{

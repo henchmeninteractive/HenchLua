@@ -3,7 +3,7 @@ using System.IO;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	public abstract class Function
 	{

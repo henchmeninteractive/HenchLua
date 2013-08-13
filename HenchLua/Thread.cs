@@ -2,7 +2,7 @@
 
 using Debug = System.Diagnostics.Debug;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	public class Thread
 	{
@@ -124,8 +124,17 @@ namespace HenchLua
 
 				owner.stackTop = stackTop + 1;
 			}
+			
+			public void Pop()
+			{
+				int newTop = owner.stackTop - 1;
+				if( newTop < owner.call.StackBase )
+					throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
 
-			public void Pop( int count = 1 )
+				owner.stackTop = newTop;
+			}
+			
+			public void Pop( int count )
 			{
 				if( count < 0 )
 					throw new ArgumentOutOfRangeException( "count" );

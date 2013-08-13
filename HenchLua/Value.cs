@@ -2,7 +2,7 @@
 
 using Debug = System.Diagnostics.Debug;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	public enum ValueType
 	{

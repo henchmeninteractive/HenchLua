@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
     public class State : Thread
     {

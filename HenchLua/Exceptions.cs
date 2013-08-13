@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	[Serializable]
 	public class LuaException : Exception

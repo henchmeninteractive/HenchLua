@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	internal class Proto : Function
 	{

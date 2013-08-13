@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	public static class BaseLib
 	{

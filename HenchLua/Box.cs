@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	internal sealed class BoolBox
 	{

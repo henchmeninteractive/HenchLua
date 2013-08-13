@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("HenchLua")]
+[assembly: AssemblyTitle("Henchmen.Lua")]
 [assembly: AssemblyDescription("Managed Lua VM.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Henchmen Interactive")]
-[assembly: AssemblyProduct("HenchLua")]
+[assembly: AssemblyProduct("Henchmen.Lua")]
 [assembly: AssemblyCopyright( "Copyright © 2013 Henchmen Interactive" )]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

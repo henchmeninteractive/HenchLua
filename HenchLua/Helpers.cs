@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	internal static class Helpers
 	{

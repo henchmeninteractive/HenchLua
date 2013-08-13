@@ -3,7 +3,7 @@ using System.Text;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace HenchLua
+namespace Henchmen.Lua
 {
 	/// <summary>
 	/// Represents a byte-oriented string.
