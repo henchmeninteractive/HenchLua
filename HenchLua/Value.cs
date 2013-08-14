@@ -67,6 +67,25 @@ namespace Henchmen.Lua
 				return ValueType.UserData;
 			}
 		}
+		
+		public bool IsNil { get { return RefVal == null; } }
+		
+		public bool IsBool { get { return RefVal == BoolBox.True || RefVal == BoolBox.False; } }
+		public bool IsTrue { get { return RefVal == BoolBox.True; } }
+		public bool IsFalse { get { return RefVal == BoolBox.False; } }
+		
+		public bool IsNumber { get { return RefVal == NumTypeTag; } }
+		
+		public bool IsLString { get { return RefVal is byte[]; } }
+		
+		public bool IsTable { get { return RefVal is Table; } }
+		
+		public bool IsFunction { get { return Callable.IsCallable( RefVal ); } }
+		public bool IsCallable { get { return Callable.IsCallable( RefVal ); } }
+		
+		public bool IsThread { get { return RefVal is Thread; } }
+		
+		public bool IsUserData { get { return ValueType == ValueType.UserData; } }
 
 		#region Constructors
 
@@ -293,8 +312,6 @@ namespace Henchmen.Lua
 
 		#region To*
 
-		public bool IsNil { get { return RefVal == null; } }
-
 		/// <summary>
 		/// Returns true if the value is non-nil and not false.
 		/// </summary>
@@ -350,6 +367,17 @@ namespace Henchmen.Lua
 		public Table ToTable()
 		{
 			return RefVal as Table;
+		}
+		
+		/// <summary>
+		/// Returns the value as a callable (if it is callable, else returns Callable.Nil).
+		/// </summary>
+		public Callable ToCallable()
+		{
+			if( !Callable.IsCallable( RefVal ) )
+				return Callable.Nil;
+			
+			return new Callable() { Val = RefVal };
 		}
 
 		/// <summary>
@@ -439,7 +467,15 @@ namespace Henchmen.Lua
 		{
 			return (Thread)value.RefVal;
 		}
-
+		
+		public static explicit operator Callable( Value value )
+		{
+			if( !Callable.IsCallable( value.RefVal ) )
+				throw new InvalidCastException();
+			
+			return new Callable() { Val = value.RefVal };
+		}
+		
 		#endregion
 
 		#endregion
