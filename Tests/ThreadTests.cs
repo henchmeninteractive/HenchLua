@@ -10,7 +10,7 @@ namespace Henchmen.Lua.Tests
 		public void Ctor()
 		{
 			var thread = new Thread();
-			Assert.AreEqual( 0, thread.Stack.Top );
+			Assert.AreEqual( 0, thread.StackTop );
 		}
 
 		[TestMethod]
@@ -51,18 +51,16 @@ namespace Henchmen.Lua.Tests
 
 			thread.Call( func, 0, 1 );
 
-			var stk = thread.Stack;
+			Assert.AreEqual( 1, thread.StackTop );
+			Assert.AreEqual( 42, thread[1] );
 
-			Assert.AreEqual( 1, stk.Top );
-			Assert.AreEqual( 42, stk[1] );
-
-			stk.Pop();
-			Assert.AreEqual( 0, stk.Top );
+			thread.Pop();
+			Assert.AreEqual( 0, thread.StackTop );
 
 			thread.Call( func, 0, 1 );
 
-			Assert.AreEqual( 1, stk.Top );
-			Assert.AreEqual( 42, stk[1] );
+			Assert.AreEqual( 1, thread.StackTop );
+			Assert.AreEqual( 42, thread[1] );
 		}
 
 		[TestMethod]
@@ -198,8 +196,8 @@ namespace Henchmen.Lua.Tests
 			int numCallbacks = 0;
 			globals[new LString( "callback" )] = (Callable)(l =>
 			{
-				Assert.AreEqual( 1, l.Stack.Top );
-				Assert.AreEqual( 42, l.Stack[1] );
+				Assert.AreEqual( 1, l.StackTop );
+				Assert.AreEqual( 42, l[1] );
 
 				numCallbacks++;
 				return 0;
@@ -232,8 +230,8 @@ namespace Henchmen.Lua.Tests
 
 			public override int Execute( Thread l )
 			{
-				Assert.AreEqual( 1, l.Stack.Top );
-				Assert.AreEqual( 42, l.Stack[1] );
+				Assert.AreEqual( 1, l.StackTop );
+				Assert.AreEqual( 42, l[1] );
 
 				RunCount++;
 				return 0;
@@ -251,10 +249,10 @@ namespace Henchmen.Lua.Tests
 			int numCallbacks = 0;
 			globals[new LString( "callback" )] = (Callable)(l =>
 			{
-				Assert.AreEqual( 3, l.Stack.Top );
+				Assert.AreEqual( 3, l.StackTop );
 
 				for( int i = 1; i <= 3; i++ )
-					l.Stack.Push( l.Stack[i].ToDouble() + i );
+					l.Push( l[i].ToDouble() + i );
 
 				numCallbacks++;
 				return 3;
@@ -264,9 +262,9 @@ namespace Henchmen.Lua.Tests
 
 			Assert.AreEqual( 2, numCallbacks );
 
-			Assert.AreEqual( 42, thread.Stack[1] );
-			Assert.AreEqual( 54, thread.Stack[2] );
-			Assert.AreEqual( 66, thread.Stack[3] );
+			Assert.AreEqual( 42, thread[1] );
+			Assert.AreEqual( 54, thread[2] );
+			Assert.AreEqual( 66, thread[3] );
 		}
 
 		private static void RunTestScript( string script, params Value[] expectedResults )
@@ -283,11 +281,9 @@ namespace Henchmen.Lua.Tests
 
 			thread.Call( func, 0, Thread.CallReturnAll );
 
-			var stk = thread.Stack;
-
-			Assert.AreEqual( expectedResults.Length, stk.Top );
+			Assert.AreEqual( expectedResults.Length, thread.StackTop );
 			for( int i = 0; i < expectedResults.Length; i++ )
-				Assert.AreEqual( expectedResults[i], stk[i + 1] );
+				Assert.AreEqual( expectedResults[i], thread[i + 1] );
 		}
 	}
 }

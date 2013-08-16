@@ -15,141 +15,125 @@ namespace Henchmen.Lua
 		private Value[] stack = new Value[MinStack * 2];
 		private int stackTop;
 
-		public struct StackOps
+		#region Stack operations
+
+		public int StackTop
 		{
-			private Thread owner;
-
-			internal StackOps( Thread owner )
+			get { return stackTop - call.StackBase; }
+			set
 			{
-				this.owner = owner;
-			}
+				if( value < 0 )
+					throw new ArgumentOutOfRangeException( "Top" );
 
-			public int Top
-			{
-				get { return owner.stackTop - owner.call.StackBase; }
-				set
-				{
-					if( value < 0 )
-						throw new ArgumentOutOfRangeException( "Top" );
+				int oldTop = stackTop;
+				int newTop = call.StackBase + value;
 
-					int oldTop = owner.stackTop;
-					int newTop = owner.call.StackBase + value;
+				if( newTop > stack.Length )
+					throw new ArgumentOutOfRangeException( "Top", "New top overflows the stack." );
 
-					var stack = owner.stack;
+				int start = Math.Min( oldTop, newTop );
+				int end = Math.Max( oldTop, newTop );
 
-					if( newTop > stack.Length )
-						throw new ArgumentOutOfRangeException( "Top", "New top overflows the stack." );
+				for( int i = start; i < end; i++ )
+					stack[i].RefVal = null;
 
-					int start = Math.Min( oldTop, newTop );
-					int end = Math.Max( oldTop, newTop );
-
-					for( int i = start; i < end; i++ )
-						stack[i].RefVal = null;
-
-					owner.stackTop = newTop;
-				}
-			}
-
-			public void CheckSpace( int spaceNeeded )
-			{
-				if( spaceNeeded < 0 )
-					throw new ArgumentOutOfRangeException( "spaceNeeded" );
-
-				owner.CheckStack( owner.stackTop + spaceNeeded );
-			}
-
-			public int AbsIndex( int index )
-			{
-				if( index == 0 )
-					return 0;
-
-				if( index < 0 )
-					index = Top + index + 1;
-
-				return index;
-			}
-
-			internal int RealIndex( int index )
-			{
-				if( index == 0 )
-					throw new ArgumentOutOfRangeException( "index" );
-
-				if( index < 0 )
-				{
-					index = owner.stackTop + index;
-					if( index < owner.call.StackBase )
-						throw new ArgumentOutOfRangeException( "index" );
-				}
-				else
-				{
-					index = owner.call.StackBase + index - 1;
-					if( index >= owner.stackTop )
-						throw new ArgumentOutOfRangeException( "index" );
-				}
-
-				return index;
-			}
-
-			public Value this[int index]
-			{
-				get { return owner.stack[RealIndex( index )]; }
-				set { owner.stack[RealIndex( index )] = value; }
-			}
-
-			public void Push( Value value )
-			{
-				var stack = owner.stack;
-				var stackTop = owner.stackTop;
-
-				if( stackTop == stack.Length )
-					throw new InvalidOperationException( "Lua stack overflow." );
-
-				stack[stackTop] = value;
-
-				owner.stackTop = stackTop + 1;
-			}
-
-			public void Insert( int index, Value value )
-			{
-				var stack = owner.stack;
-				var stackTop = owner.stackTop;
-
-				if( stackTop == stack.Length )
-					throw new InvalidOperationException( "Lua stack overflow." );
-
-				index = RealIndex( index );
-
-				Array.Copy( stack, index, stack, index + 1, stackTop - index );
-				stack[index] = value;
-
-				owner.stackTop = stackTop + 1;
-			}
-			
-			public void Pop()
-			{
-				int newTop = owner.stackTop - 1;
-				if( newTop < owner.call.StackBase )
-					throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
-
-				owner.stackTop = newTop;
-			}
-			
-			public void Pop( int count )
-			{
-				if( count < 0 )
-					throw new ArgumentOutOfRangeException( "count" );
-				if( count == 0 )
-					return;
-
-				int newTop = owner.stackTop - count;
-				if( newTop < owner.call.StackBase )
-					throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
-
-				owner.stackTop = newTop;
+				stackTop = newTop;
 			}
 		}
 
-		public StackOps Stack { get { return new StackOps( this ); } }
+		public void CheckSpace( int spaceNeeded )
+		{
+			if( spaceNeeded < 0 )
+				throw new ArgumentOutOfRangeException( "spaceNeeded" );
+
+			CheckStack( stackTop + spaceNeeded );
+		}
+
+		public int AbsIndex( int index )
+		{
+			if( index == 0 )
+				return 0;
+
+			if( index < 0 )
+				index = StackTop + index + 1;
+
+			return index;
+		}
+
+		internal int RealIndex( int index )
+		{
+			if( index == 0 )
+				throw new ArgumentOutOfRangeException( "index" );
+
+			if( index < 0 )
+			{
+				index = stackTop + index;
+				if( index < call.StackBase )
+					throw new ArgumentOutOfRangeException( "index" );
+			}
+			else
+			{
+				index = call.StackBase + index - 1;
+				if( index >= stackTop )
+					throw new ArgumentOutOfRangeException( "index" );
+			}
+
+			return index;
+		}
+
+		public Value this[int index]
+		{
+			get { return stack[RealIndex( index )]; }
+			set { stack[RealIndex( index )] = value; }
+		}
+
+		public void Push( Value value )
+		{
+			if( stackTop == stack.Length )
+				throw new InvalidOperationException( "Lua stack overflow." );
+
+			stack[stackTop] = value;
+
+			stackTop = stackTop + 1;
+		}
+
+		public void Insert( int index, Value value )
+		{
+			if( stackTop == stack.Length )
+				throw new InvalidOperationException( "Lua stack overflow." );
+
+			index = RealIndex( index );
+
+			Array.Copy( stack, index, stack, index + 1, stackTop - index );
+			stack[index] = value;
+
+			stackTop = stackTop + 1;
+		}
+			
+		public void Pop()
+		{
+			int newTop = stackTop - 1;
+			if( newTop < call.StackBase )
+				throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
+
+			stackTop = newTop;
+		}
+			
+		public void Pop( int count )
+		{
+			if( count < 0 )
+				throw new ArgumentOutOfRangeException( "count" );
+			if( count == 0 )
+				return;
+
+			int newTop = stackTop - count;
+			if( newTop < call.StackBase )
+				throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
+
+			stackTop = newTop;
+		}
+
+		#endregion
 
 		private void CheckStack( int minLen )
 		{
@@ -1343,9 +1327,9 @@ namespace Henchmen.Lua
 				throw new ArgumentOutOfRangeException( "numResults" );
 
 			if( numArgs != 0 )
-				Stack.Insert( -numArgs, func );
+				Insert( -numArgs, func );
 			else
-				Stack.Push( func );
+				Push( func );
 
 			Call( numArgs, numResults );
 		}

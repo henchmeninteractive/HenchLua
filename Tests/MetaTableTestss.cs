@@ -36,11 +36,9 @@ namespace Henchmen.Lua.Tests
 
 			thread.Call( func, 0, Thread.CallReturnAll );
 
-			var stk = thread.Stack;
-
-			Assert.AreEqual( expectedResults.Length, stk.Top );
+			Assert.AreEqual( expectedResults.Length, thread.StackTop );
 			for( int i = 0; i < expectedResults.Length; i++ )
-				Assert.AreEqual( expectedResults[i], stk[i + 1] );
+				Assert.AreEqual( expectedResults[i], thread[i + 1] );
 		}
 	}
 }

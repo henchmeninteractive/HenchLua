@@ -30,65 +30,59 @@ namespace Henchmen.Lua
 
 		private static int BType( Thread l )
 		{
-			var stk = l.Stack;
+			l.StackTop = 1;
 
-			stk.Top = 1;
-
-			int iType = (int)stk[1].ValueType;
+			int iType = (int)l[1].ValueType;
 			Debug.Assert( iType >= 0 && iType < Literals.TypeNames.Length );
 
-			stk[1] = Literals.TypeNames[iType];
+			l[1] = Literals.TypeNames[iType];
 
 			return 1;
 		}
 
 		private static int BNext( Thread l )
 		{
-			var stk = l.Stack;
+			l.StackTop = 2;
 
-			stk.Top = 2;
-
-			var tbl = (Table)stk[1];
+			var tbl = (Table)l[1];
 			if( tbl == null )
 				throw new InvalidCastException();
 
-			Value key = stk[2];
+			Value key = l[2];
 			Value val;
 
 			if( tbl.GetNext( ref key, out val ) )
 			{
-				stk.Top = 2;
-				stk[1] = key;
-				stk[2] = val;
+				l.StackTop = 2;
+				l[1] = key;
+				l[2] = val;
 				return 2;
 			}
 			else
 			{
-				stk.Top = 1;
-				stk[1] = Value.Nil;
+				l.StackTop = 1;
+				l[1] = Value.Nil;
 				return 1;
 			}
 		}
 
 		private static int BPairs( Thread l )
 		{
-			var stk = l.Stack;
-
-			var val = stk[1];
+			var val = l[1];
 			var mt = GetMetatable( val );
 
 			Value mmt;
 			if( mt != null && mt.TryGetValue( Literals.TagMethod_Pairs, out mmt ) )
 			{
-				stk.Top = 1;
+				l.StackTop = 1;
 				l.Call( (Callable)mmt, 1, 3 );
 			}
 			else
 			{
-				stk.Top = 3;
-				stk[1] = Cb_BNext;
-				stk[2] = val;
-				stk[3] = Value.Nil;
+				l.StackTop = 3;
+				l[1] = Cb_BNext;
+				l[2] = val;
+				l[3] = Value.Nil;
 			}
 
 			return 3;
@@ -96,9 +90,7 @@ namespace Henchmen.Lua
 
 		private static int BGetMetatable( Thread l )
 		{
-			var stk = l.Stack;
-
-			var mt = GetMetatable( stk[1] );
+			var mt = GetMetatable( l[1] );
 			
 			Value vmt;
 
@@ -115,8 +107,8 @@ namespace Henchmen.Lua
 				vmt = Value.Nil;
 			}
 
-			stk.Top = 1;
-			stk[1] = vmt;
+			l.StackTop = 1;
+			l[1] = vmt;
 
 			return 1;			
 		}
@@ -136,18 +128,16 @@ namespace Henchmen.Lua
 
 		private static int BSetMetatable( Thread l )
 		{
-			var stk = l.Stack;
-
-			var mt = GetMetatable( stk[1] );
+			var mt = GetMetatable( l[1] );
 			if( mt != null && mt.ContainsKey( Literals.TagInfo_Metatable ) )
 				throw new ArgumentException( "Can't change a protected metatable." );
 
-			mt = stk[2].ToTable();
+			mt = l[2].ToTable();
 			if( mt == null )
 				throw new ArgumentException( "Expected a table." );
 
-			SetMetatable( stk[1], mt );
-			stk.Top = 1;
+			SetMetatable( l[1], mt );
+			l.StackTop = 1;
 
 			return 1;
 		}
