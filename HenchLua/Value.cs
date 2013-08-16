@@ -4,7 +4,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Henchmen.Lua
 {
-	public enum ValueType
+	public enum LValueType
 	{
 		Nil,
 
@@ -38,33 +38,33 @@ namespace Henchmen.Lua
 		/// </summary>
 		internal static readonly object OpenUpValueTag = new object();
 
-		public ValueType ValueType
+		public LValueType ValueType
 		{
 			get
 			{
 				if( RefVal == null )
-					return ValueType.Nil;
+					return LValueType.Nil;
 
 				if( RefVal == BoolBox.True ||
 					RefVal == BoolBox.False )
-					return ValueType.Bool;
+					return LValueType.Bool;
 
 				if( RefVal == NumTypeTag )
-					return ValueType.Number;
+					return LValueType.Number;
 
 				if( RefVal is byte[] )
-					return ValueType.String;
+					return LValueType.String;
 
 				if( RefVal is Table )
-					return ValueType.Table;
+					return LValueType.Table;
 
 				if( Callable.IsCallable( RefVal ) )
-					return ValueType.Function;
+					return LValueType.Function;
 
 				if( RefVal is Thread )
-					return ValueType.Thread;
+					return LValueType.Thread;
 
-				return ValueType.UserData;
+				return LValueType.UserData;
 			}
 		}
 		
@@ -85,7 +85,7 @@ namespace Henchmen.Lua
 		
 		public bool IsThread { get { return RefVal is Thread; } }
 		
-		public bool IsUserData { get { return ValueType == ValueType.UserData; } }
+		public bool IsUserData { get { return ValueType == LValueType.UserData; } }
 
 		#region Constructors
 

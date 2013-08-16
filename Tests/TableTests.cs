@@ -358,8 +358,8 @@ namespace Henchmen.Lua.Tests
 			int n = 0;
 			for( Value v, k = new Value(); t.GetNext( ref k, out v ); )
 			{
-				Assert.AreEqual( ValueType.Number, k.ValueType );
-				Assert.AreEqual( ValueType.Number, v.ValueType );
+				Assert.AreEqual( LValueType.Number, k.ValueType );
+				Assert.AreEqual( LValueType.Number, v.ValueType );
 
 				Assert.AreEqual( -k.ToDouble(), v.ToDouble() );
 
@@ -371,8 +371,8 @@ namespace Henchmen.Lua.Tests
 			n = 0;
 			foreach( var p in t )
 			{
-				Assert.AreEqual( ValueType.Number, p.Key.ValueType );
-				Assert.AreEqual( ValueType.Number, p.Value.ValueType );
+				Assert.AreEqual( LValueType.Number, p.Key.ValueType );
+				Assert.AreEqual( LValueType.Number, p.Value.ValueType );
 
 				Assert.AreEqual( -p.Key.ToDouble(), p.Value.ToDouble() );
 
@@ -396,8 +396,8 @@ namespace Henchmen.Lua.Tests
 			int n = 0;
 			for( Value v, k = new Value(); t.GetNext( ref k, out v ); )
 			{
-				Assert.AreEqual( ValueType.Number, k.ValueType );
-				Assert.AreEqual( ValueType.Number, v.ValueType );
+				Assert.AreEqual( LValueType.Number, k.ValueType );
+				Assert.AreEqual( LValueType.Number, v.ValueType );
 
 				Assert.AreEqual( -k.ToDouble(), v.ToDouble() );
 
@@ -409,8 +409,8 @@ namespace Henchmen.Lua.Tests
 			n = 0;
 			foreach( var p in t )
 			{
-				Assert.AreEqual( ValueType.Number, p.Key.ValueType );
-				Assert.AreEqual( ValueType.Number, p.Value.ValueType );
+				Assert.AreEqual( LValueType.Number, p.Key.ValueType );
+				Assert.AreEqual( LValueType.Number, p.Value.ValueType );
 
 				Assert.AreEqual( -p.Key.ToDouble(), p.Value.ToDouble() );
 
@@ -438,8 +438,8 @@ namespace Henchmen.Lua.Tests
 			int n = 0;
 			for( Value v, k = new Value(); t.GetNext( ref k, out v ); )
 			{
-				Assert.AreEqual( ValueType.Number, k.ValueType );
-				Assert.AreEqual( ValueType.Number, v.ValueType );
+				Assert.AreEqual( LValueType.Number, k.ValueType );
+				Assert.AreEqual( LValueType.Number, v.ValueType );
 
 				Assert.AreEqual( -k.ToDouble(), v.ToDouble() );
 
@@ -451,8 +451,8 @@ namespace Henchmen.Lua.Tests
 			n = 0;
 			foreach( var p in t )
 			{
-				Assert.AreEqual( ValueType.Number, p.Key.ValueType );
-				Assert.AreEqual( ValueType.Number, p.Value.ValueType );
+				Assert.AreEqual( LValueType.Number, p.Key.ValueType );
+				Assert.AreEqual( LValueType.Number, p.Value.ValueType );
 
 				Assert.AreEqual( -p.Key.ToDouble(), p.Value.ToDouble() );
 

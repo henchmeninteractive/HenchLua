@@ -172,7 +172,7 @@ namespace Henchmen.Lua.Tests
 
 			var tableObj = globals["t"];
 
-			Assert.IsTrue( tableObj.ValueType == ValueType.Table );
+			Assert.IsTrue( tableObj.ValueType == LValueType.Table );
 			var table = (Table)tableObj;
 
 			Assert.AreEqual( 5, table.GetLen() );

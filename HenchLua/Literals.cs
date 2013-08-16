@@ -15,7 +15,7 @@
 		public static readonly LString TypeName_Thread = new LString( "thread" );
 
 		/// <summary>
-		/// In the same order as <see cref="ValueType"/>.
+		/// In the same order as <see cref="LValueType"/>.
 		/// </summary>
 		public static readonly LString[] TypeNames =
 		{

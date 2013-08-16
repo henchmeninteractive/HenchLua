@@ -12,7 +12,7 @@ namespace Henchmen.Lua.Tests
 			var val = new Value();
 			Assert.IsTrue( val.IsNil );
 			Assert.IsFalse( val.ToBool() );
-			Assert.AreEqual( ValueType.Nil, val.ValueType );
+			Assert.AreEqual( LValueType.Nil, val.ValueType );
 
 			val.Set( true );
 			Assert.IsFalse( val.IsNil );
@@ -37,7 +37,7 @@ namespace Henchmen.Lua.Tests
 		public void Bools()
 		{
 			Value val = true;
-			Assert.AreEqual( ValueType.Bool, val.ValueType );
+			Assert.AreEqual( LValueType.Bool, val.ValueType );
 			Assert.IsTrue( val.ToBool() );
 			Assert.IsTrue( (bool)val );
 
@@ -61,7 +61,7 @@ namespace Henchmen.Lua.Tests
 		public void Numbers()
 		{
 			Value val = 4.5;
-			Assert.AreEqual( ValueType.Number, val.ValueType );
+			Assert.AreEqual( LValueType.Number, val.ValueType );
 			Assert.AreEqual( 4.5, (double)val );
 			Assert.AreEqual( 4.5, val.ToDouble() );
 
@@ -103,9 +103,9 @@ namespace Henchmen.Lua.Tests
 			Value va2 = a2;
 			Value vb = b;
 
-			Assert.AreEqual( ValueType.String, va1.ValueType );
-			Assert.AreEqual( ValueType.String, va2.ValueType );
-			Assert.AreEqual( ValueType.String, vb.ValueType );
+			Assert.AreEqual( LValueType.String, va1.ValueType );
+			Assert.AreEqual( LValueType.String, va2.ValueType );
+			Assert.AreEqual( LValueType.String, vb.ValueType );
 
 			Assert.IsTrue( va1.Equals( a1 ) );
 			Assert.IsTrue( va1.Equals( a2 ) );
