@@ -2,22 +2,22 @@
 {
 	public static class Literals
 	{
-		public static readonly String VersionName = new String( "Lua 5.2" );
+		public static readonly LString VersionName = new LString( "Lua 5.2" );
 
-		public static readonly String TypeName_Nil = new String( "nil" );
-		public static readonly String TypeName_Bool = new String( "boolean" );
-		public static readonly String TypeName_Number = new String( "number" );
+		public static readonly LString TypeName_Nil = new LString( "nil" );
+		public static readonly LString TypeName_Bool = new LString( "boolean" );
+		public static readonly LString TypeName_Number = new LString( "number" );
 
-		public static readonly String TypeName_String = new String( "string" );
-		public static readonly String TypeName_Table = new String( "table" );
-		public static readonly String TypeName_UserData = new String( "userdata" );
-		public static readonly String TypeName_Function = new String( "function" );
-		public static readonly String TypeName_Thread = new String( "thread" );
+		public static readonly LString TypeName_String = new LString( "string" );
+		public static readonly LString TypeName_Table = new LString( "table" );
+		public static readonly LString TypeName_UserData = new LString( "userdata" );
+		public static readonly LString TypeName_Function = new LString( "function" );
+		public static readonly LString TypeName_Thread = new LString( "thread" );
 
 		/// <summary>
 		/// In the same order as <see cref="ValueType"/>.
 		/// </summary>
-		public static readonly String[] TypeNames =
+		public static readonly LString[] TypeNames =
 		{
 			TypeName_Nil,
 
@@ -31,33 +31,33 @@
 			TypeName_Thread,
 		};
 	
-		public static readonly String TagMethod_Index = new String( "__index" );
-		public static readonly String TagMethod_NewIndex = new String( "__newindex" );
-		public static readonly String TagMethod_Gc = new String( "__gc" );
-		public static readonly String TagMethod_Mode = new String( "__mode" );
-		public static readonly String TagMethod_Len = new String( "__len" );
-		public static readonly String TagMethod_Eq = new String( "__eq" );
-		public static readonly String TagMethod_Add = new String( "__add" );
-		public static readonly String TagMethod_Sub = new String( "__sub" );
-		public static readonly String TagMethod_Mul = new String( "__mul" );
-		public static readonly String TagMethod_Div = new String( "__div" );
-		public static readonly String TagMethod_Mod = new String( "__mod" );
-		public static readonly String TagMethod_Pow = new String( "__pow" );
-		public static readonly String TagMethod_Unm = new String( "__unm" );
-		public static readonly String TagMethod_Lt = new String( "__lt" );
-		public static readonly String TagMethod_Le = new String( "__le" );
-		public static readonly String TagMethod_Concat = new String( "__concat" );
-		public static readonly String TagMethod_Call = new String( "__call" );
+		public static readonly LString TagMethod_Index = new LString( "__index" );
+		public static readonly LString TagMethod_NewIndex = new LString( "__newindex" );
+		public static readonly LString TagMethod_Gc = new LString( "__gc" );
+		public static readonly LString TagMethod_Mode = new LString( "__mode" );
+		public static readonly LString TagMethod_Len = new LString( "__len" );
+		public static readonly LString TagMethod_Eq = new LString( "__eq" );
+		public static readonly LString TagMethod_Add = new LString( "__add" );
+		public static readonly LString TagMethod_Sub = new LString( "__sub" );
+		public static readonly LString TagMethod_Mul = new LString( "__mul" );
+		public static readonly LString TagMethod_Div = new LString( "__div" );
+		public static readonly LString TagMethod_Mod = new LString( "__mod" );
+		public static readonly LString TagMethod_Pow = new LString( "__pow" );
+		public static readonly LString TagMethod_Unm = new LString( "__unm" );
+		public static readonly LString TagMethod_Lt = new LString( "__lt" );
+		public static readonly LString TagMethod_Le = new LString( "__le" );
+		public static readonly LString TagMethod_Concat = new LString( "__concat" );
+		public static readonly LString TagMethod_Call = new LString( "__call" );
 
-		public static readonly String TagMethod_Pairs = new String( "__pairs" );
-		public static readonly String TagMethod_IPairs = new String( "__ipairs" );
+		public static readonly LString TagMethod_Pairs = new LString( "__pairs" );
+		public static readonly LString TagMethod_IPairs = new LString( "__ipairs" );
 
-		public static readonly String TagInfo_Metatable = new String( "__metatable" );
+		public static readonly LString TagInfo_Metatable = new LString( "__metatable" );
 
 		/// <summary>
 		/// In the same order as <see cref="TagMethods"/>.
 		/// </summary>
-		internal static readonly String[] TagMethodNames =
+		internal static readonly LString[] TagMethodNames =
 		{
 			TagMethod_Index,
 			TagMethod_NewIndex,

@@ -777,7 +777,7 @@ namespace Henchmen.Lua
 			if( asStr != null )
 			{
 				ret.RefVal = Value.NumTypeTag;
-				ret.NumVal = asStr.Length - String.BufferDataOffset;
+				ret.NumVal = asStr.Length - LString.BufferDataOffset;
 
 				return;
 			}
@@ -829,21 +829,21 @@ namespace Henchmen.Lua
 						numCat++;
 					}
 
-					total -= numCat * String.BufferDataOffset;
+					total -= numCat * LString.BufferDataOffset;
 
-					var catBuf = String.InternalAllocBuffer( total );
+					var catBuf = LString.InternalAllocBuffer( total );
 					
-					for( int o = String.BufferDataOffset, i = 0; i < numCat; i++ )
+					for( int o = LString.BufferDataOffset, i = 0; i < numCat; i++ )
 					{
 						var str = stack[top - numCat + i].RefVal as byte[];
-						var len = str.Length - String.BufferDataOffset;
+						var len = str.Length - LString.BufferDataOffset;
 
-						Array.Copy( str, String.BufferDataOffset, catBuf, o, len );
+						Array.Copy( str, LString.BufferDataOffset, catBuf, o, len );
 
 						o += len;
 					}
 
-					var catStr = String.InternalFinishBuffer( catBuf );
+					var catStr = LString.InternalFinishBuffer( catBuf );
 
 					stack[top - numCat].RefVal = catStr.InternalData;
 				}
@@ -1087,7 +1087,7 @@ namespace Henchmen.Lua
 			return false;
 		}
 
-		private void DoArith( String opName, object a, object b, out Value ret )
+		private void DoArith( LString opName, object a, object b, out Value ret )
 		{
 			throw new NotImplementedException();
 		}
@@ -1096,7 +1096,7 @@ namespace Henchmen.Lua
 		{
 			var asStr = a.RefVal as byte[];
 			if( asStr != null )
-				return String.InternalEquals( asStr, b.RefVal as byte[] );
+				return LString.InternalEquals( asStr, b.RefVal as byte[] );
 
 			throw new NotImplementedException();
 		}

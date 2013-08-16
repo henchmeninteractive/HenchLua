@@ -54,7 +54,7 @@ namespace Henchmen.Lua
 			return (hash & 0x7FFFFFFF) % nodes.Length;
 		}
 
-		private int GetMainPosition( String key )
+		private int GetMainPosition( LString key )
 		{
 			int hash = key.GetHashCode();
 			return (hash & 0x7FFFFFFF) % nodes.Length;
@@ -170,7 +170,7 @@ namespace Henchmen.Lua
 		/// Finds the key's location in the table (returns 0 if not found).
 		/// Note that the value at that key may be nil.
 		/// </summary>
-		internal int FindValue( String key )
+		internal int FindValue( LString key )
 		{
 			if( key.InternalData == null )
 				throw new ArgumentNullException( "key" );
@@ -255,7 +255,7 @@ namespace Henchmen.Lua
 			return !IsLocNilOrEmpty( FindValue( key ) );
 		}
 
-		public bool ContainsKey( String key )
+		public bool ContainsKey( LString key )
 		{
 			return !IsLocNilOrEmpty( FindValue( key ) );
 		}
@@ -448,7 +448,7 @@ namespace Henchmen.Lua
 		/// This is a raw operation, it does
 		/// not invoke metatable methods.
 		/// </summary>
-		public Value this[String key]
+		public Value this[LString key]
 		{
 			get
 			{
@@ -505,7 +505,7 @@ namespace Henchmen.Lua
 			WriteValue( loc, ref value );
 		}
 
-		public Value RawGet( String key )
+		public Value RawGet( LString key )
 		{
 			Value ret;
 
@@ -515,7 +515,7 @@ namespace Henchmen.Lua
 			return ret;
 		}
 
-		public void RawSet( String key, Value value )
+		public void RawSet( LString key, Value value )
 		{
 			int loc = FindValue( key );
 			if( loc == 0 )

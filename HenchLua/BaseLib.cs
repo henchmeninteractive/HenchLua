@@ -7,13 +7,13 @@ namespace Henchmen.Lua
 {
 	public static class BaseLib
 	{
-		public static readonly String Name_BGetMetaTable = "getmetatable";
-		public static readonly String Name_BSetMetaTable = "setmetatable";
+		public static readonly LString Name_BGetMetaTable = "getmetatable";
+		public static readonly LString Name_BSetMetaTable = "setmetatable";
 
-		public static readonly String Name_BNext = "next";
-		public static readonly String Name_BPairs = "pairs";
+		public static readonly LString Name_BNext = "next";
+		public static readonly LString Name_BPairs = "pairs";
 
-		public static readonly String Name_BType = "type";
+		public static readonly LString Name_BType = "type";
 
 		public static void SetBaseMethods( Table globals )
 		{

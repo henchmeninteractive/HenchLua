@@ -43,7 +43,7 @@
     <Compile Include="Instruction.cs" />
     <Compile Include="Literals.cs" />
     <Compile Include="Proto.cs" />
-    <Compile Include="String.cs" />
+    <Compile Include="LString.cs" />
     <Compile Include="Table.cs" />
     <Compile Include="Thread.cs" />
     <Compile Include="State.cs" />

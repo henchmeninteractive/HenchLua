@@ -12,9 +12,9 @@ namespace Henchmen.Lua
 	/// These strings may contain nulls and are not null-terminated.
 	/// </remarks>
 	[Serializable]
-	public struct String
+	public struct LString
 	{
-		public static readonly String Empty = new String( string.Empty );
+		public static readonly LString Empty = new LString( string.Empty );
 
 		internal byte[] InternalData;
 
@@ -26,7 +26,7 @@ namespace Henchmen.Lua
 		/// </summary>
 		/// <param name="str">The string.</param>
 		/// <param name="encoding">The desired encoding.</param>
-		public String( string str, Encoding encoding )
+		public LString( string str, Encoding encoding )
 		{
 			if( str == null )
 			{
@@ -49,14 +49,14 @@ namespace Henchmen.Lua
 		/// Initializes a String from a .NET String using UTF8.
 		/// </summary>
 		/// <param name="str">The string.</param>
-		public String( string str )
+		public LString( string str )
 			: this( str, Encoding.UTF8 )
 		{
 		}
 
-		public static implicit operator String( string str )
+		public static implicit operator LString( string str )
 		{
-			return new String( str );
+			return new LString( str );
 		}
 
 		/// <summary>
@@ -65,7 +65,7 @@ namespace Henchmen.Lua
 		/// <param name="rawBytes">The byte array.</param>
 		/// <param name="index">The start of the subrange to use.</param>
 		/// <param name="count">The length of the subrange to use.</param>
-		public String( byte[] rawBytes, int index, int count )
+		public LString( byte[] rawBytes, int index, int count )
 		{
 			if( rawBytes == null )
 				throw new ArgumentNullException( "rawBytes" );
@@ -87,7 +87,7 @@ namespace Henchmen.Lua
 		/// Initializes a String from an array of raw bytes.
 		/// </summary>
 		/// <param name="rawBytes">The byte array.</param>
-		public String( byte[] rawBytes )
+		public LString( byte[] rawBytes )
 		{
 			if( rawBytes == null )
 				throw new ArgumentNullException( "rawBytes" );
@@ -98,10 +98,10 @@ namespace Henchmen.Lua
 			UpdateHashCode();
 		}
 		
-		internal static String InternalFromData( byte[] internalData )
+		internal static LString InternalFromData( byte[] internalData )
 		{
 			Debug.Assert( internalData != null );
-			return new String() { InternalData = internalData };
+			return new LString() { InternalData = internalData };
 		}
 
 		internal const int BufferDataOffset = 4;
@@ -111,10 +111,10 @@ namespace Henchmen.Lua
 			return new byte[length + 4];
 		}
 
-		internal static String InternalFinishBuffer( byte[] buffer )
+		internal static LString InternalFinishBuffer( byte[] buffer )
 		{
 			Debug.Assert( buffer != null );
-			var ret = new String { InternalData = buffer };
+			var ret = new LString { InternalData = buffer };
 			ret.UpdateHashCode();
 			return ret;
 		}
@@ -135,13 +135,13 @@ namespace Henchmen.Lua
 			}
 		}
 
-		public String Substring( int index, int count )
+		public LString Substring( int index, int count )
 		{
 			if( InternalData == null )
-				return new String();
+				return new LString();
 
 			if( count == 0 )
-				return String.Empty;
+				return LString.Empty;
 
 			if( index < 0 )
 				throw new ArgumentOutOfRangeException( "index" );
@@ -150,10 +150,10 @@ namespace Henchmen.Lua
 			if( Lenght - index < count )
 				throw new ArgumentOutOfRangeException( "count" );
 
-			return new String( InternalData, 4 + index, count );
+			return new LString( InternalData, 4 + index, count );
 		}
 
-		public String Substring( int index )
+		public LString Substring( int index )
 		{
 			return Substring( index, Lenght - index );
 		}
@@ -179,22 +179,22 @@ namespace Henchmen.Lua
 		/// <summary>
 		/// Compares this string to another for equality.
 		/// </summary>
-		public bool Equals( String other )
+		public bool Equals( LString other )
 		{
 			return InternalEquals( InternalData, other.InternalData );
 		}
 
 		public override bool Equals( object obj )
 		{
-			return obj is String && Equals( (String)obj );
+			return obj is LString && Equals( (LString)obj );
 		}
 
-		public static bool operator ==( String a, String b )
+		public static bool operator ==( LString a, LString b )
 		{
 			return InternalEquals( a.InternalData, b.InternalData );
 		}
 
-		public static bool operator !=( String a, String b )
+		public static bool operator !=( LString a, LString b )
 		{
 			return !InternalEquals( a.InternalData, b.InternalData );
 		}

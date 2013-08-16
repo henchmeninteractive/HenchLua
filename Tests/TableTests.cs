@@ -40,7 +40,7 @@ namespace Henchmen.Lua.Tests
 		public void ReadNilKeyTest2()
 		{
 			var ta = new Table();
-			var x = ta[new String()];
+			var x = ta[new LString()];
 		}
 
 		[TestMethod,
@@ -56,7 +56,7 @@ namespace Henchmen.Lua.Tests
 		public void WriteNilKeyTest2()
 		{
 			var ta = new Table();
-			ta[new String()] = 4;
+			ta[new LString()] = 4;
 		}
 
 		[TestMethod]
@@ -117,9 +117,9 @@ namespace Henchmen.Lua.Tests
 		[TestMethod]
 		public void AddAndGetStringKey()
 		{
-			var sa1 = new String( "A" );
-			var sa2 = new String( "A" );
-			var sb = new String( "B" );
+			var sa1 = new LString( "A" );
+			var sa2 = new LString( "A" );
+			var sb = new LString( "B" );
 
 			var ta = new Table();
 
@@ -159,10 +159,10 @@ namespace Henchmen.Lua.Tests
 			const int max = 2048;
 
 			for( int i = 0; i < max; i++ )
-				ta[new String( string.Format( "str:{0}", i ) )] = i;
+				ta[new LString( string.Format( "str:{0}", i ) )] = i;
 
 			for( int i = 0; i < max; i++ )
-				Assert.AreEqual( i, ta[new String( string.Format( "str:{0}", i ) )] );
+				Assert.AreEqual( i, ta[new LString( string.Format( "str:{0}", i ) )] );
 		}
 
 		[TestMethod]
@@ -282,9 +282,9 @@ namespace Henchmen.Lua.Tests
 		[TestMethod]
 		public void ManyKeys()
 		{
-			var strs = new String[256];
+			var strs = new LString[256];
 			for( int i = 0; i < strs.Length; i++ )
-				strs[i] = new String( string.Format( "str:{0}", i ) );
+				strs[i] = new LString( string.Format( "str:{0}", i ) );
 
 			var ta = new Table();
 
@@ -300,7 +300,7 @@ namespace Henchmen.Lua.Tests
 				var jKey = j * Math.PI;
 				ta[jKey] = ta[jKey].IsNil ? (Value)n : Value.Nil;
 				
-				var sjKey = new String( string.Format( "jKey:{0}", j ) );
+				var sjKey = new LString( string.Format( "jKey:{0}", j ) );
 				ta[sjKey] = ta[sjKey].IsNil ? (Value)n : Value.Nil;
 
 				if( n % 10 == 0 )

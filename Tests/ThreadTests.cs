@@ -34,7 +34,7 @@ namespace Henchmen.Lua.Tests
 		[TestMethod]
 		public void Concat()
 		{
-			RunTestScript( "Concat.lua", new String( "abcabbcab-LOMG-bc" ) );
+			RunTestScript( "Concat.lua", new LString( "abcabbcab-LOMG-bc" ) );
 		}
 
 		[TestMethod]
@@ -196,7 +196,7 @@ namespace Henchmen.Lua.Tests
 			var func = Helpers.LoadFunc( "Thread/Callback.lua", globals );
 
 			int numCallbacks = 0;
-			globals[new String( "callback" )] = (Callable)(l =>
+			globals[new LString( "callback" )] = (Callable)(l =>
 			{
 				Assert.AreEqual( 1, l.Stack.Top );
 				Assert.AreEqual( 42, l.Stack[1] );
@@ -219,7 +219,7 @@ namespace Henchmen.Lua.Tests
 			var func = Helpers.LoadFunc( "Thread/Callback.lua", globals );
 
 			var fn = new CallbackFunc();
-			globals[new String( "callback" )] = (Callable)fn;
+			globals[new LString( "callback" )] = (Callable)fn;
 
 			thread.Call( func, 0, 0 );
 
@@ -249,7 +249,7 @@ namespace Henchmen.Lua.Tests
 			var func = Helpers.LoadFunc( "Thread/CallbackReturn.lua", globals );
 
 			int numCallbacks = 0;
-			globals[new String( "callback" )] = (Callable)(l =>
+			globals[new LString( "callback" )] = (Callable)(l =>
 			{
 				Assert.AreEqual( 3, l.Stack.Top );
 

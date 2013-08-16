@@ -15,7 +15,7 @@ namespace Henchmen.Lua
 		internal struct UpValDesc
 		{
 #if DEBUG_API
-			public String Name;
+			public LString Name;
 #endif
 
 			public UpValueKind Kind;
@@ -32,11 +32,11 @@ namespace Henchmen.Lua
 
 		private struct LocalVarDesc
 		{
-			public String Name;
+			public LString Name;
 			public int StartPC, endPC;
 		}
 
-		String source;
+		LString source;
 #endif
 
 		private int startLine, endLine;
@@ -216,20 +216,20 @@ namespace Henchmen.Lua
 			return ret;
 		}
 
-		private static String LoadString( BinaryReader reader )
+		private static LString LoadString( BinaryReader reader )
 		{
 			var len = reader.ReadUInt32(); //size_t
 			if( len == 0 )
-				return new String();
+				return new LString();
 
 			if( len > int.MaxValue )
 				throw new InvalidDataException( "Can't load ENORMOUS string constant." );
 
 			len--;
 
-			var buf = String.InternalAllocBuffer( (int)len );
-			reader.BaseStream.Read( buf, String.BufferDataOffset, (int)len );
-			var ret = String.InternalFinishBuffer( buf );
+			var buf = LString.InternalAllocBuffer( (int)len );
+			reader.BaseStream.Read( buf, LString.BufferDataOffset, (int)len );
+			var ret = LString.InternalFinishBuffer( buf );
 
 			if( reader.ReadByte() != 0 )
 				throw new InvalidDataException( "Malformed string constant - it's not null-terminated." );
@@ -245,10 +245,10 @@ namespace Henchmen.Lua
 
 		private struct LoadState
 		{
-			public String Name;
+			public LString Name;
 			private Stream byteCode;
 
-			public LoadState( Stream byteCode, String name )
+			public LoadState( Stream byteCode, LString name )
 			{
 				this.byteCode = byteCode;
 				this.Name = name;

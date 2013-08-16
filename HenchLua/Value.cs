@@ -113,7 +113,7 @@ namespace Henchmen.Lua
 			NumVal = value;
 		}
 
-		public Value( String value )
+		public Value( LString value )
 		{
 			RefVal = value.InternalData;
 			NumVal = 0;
@@ -165,7 +165,7 @@ namespace Henchmen.Lua
 			return new Value( value );
 		}
 
-		public static implicit operator Value( String value )
+		public static implicit operator Value( LString value )
 		{
 			return new Value( value );
 		}
@@ -219,7 +219,7 @@ namespace Henchmen.Lua
 			NumVal = value;
 		}
 
-		public void Set( String value )
+		public void Set( LString value )
 		{
 			RefVal = value.InternalData;
 		}
@@ -282,8 +282,8 @@ namespace Henchmen.Lua
 				Set( (int)value );
 			else if( value is double )
 				Set( (double)value );
-			else if( value is String )
-				Set( (String)value );
+			else if( value is LString )
+				Set( (LString)value );
 			else if( value is Callable )
 				Set( (Callable)value );
 
@@ -354,9 +354,9 @@ namespace Henchmen.Lua
 		/// is not a string).
 		/// Does not perform string conversions.
 		/// </summary>
-		public String ToLString()
+		public LString ToLString()
 		{
-			String ret;
+			LString ret;
 			ret.InternalData = RefVal as byte[];
 			return ret;
 		}
@@ -449,13 +449,13 @@ namespace Henchmen.Lua
 			return value.NumVal;
 		}
 
-		public static explicit operator String( Value value )
+		public static explicit operator LString( Value value )
 		{
 			var asStr = value.RefVal as byte[];
 			if( asStr == null )
 				throw new InvalidCastException();
 
-			return new String() { InternalData = asStr };
+			return new LString() { InternalData = asStr };
 		}
 
 		public static explicit operator Table( Value value )
@@ -511,7 +511,7 @@ namespace Henchmen.Lua
 
 			var asStr = RefVal as byte[];
 			if( asStr != null )
-				return String.InternalGetHashCode( asStr );
+				return LString.InternalGetHashCode( asStr );
 
 			var val = RefVal;
 
@@ -537,10 +537,10 @@ namespace Henchmen.Lua
 				NumVal == value;
 		}
 
-		public bool Equals( String str )
+		public bool Equals( LString str )
 		{
 			var asStr = RefVal as byte[];
-			return String.InternalEquals( asStr, str.InternalData );
+			return LString.InternalEquals( asStr, str.InternalData );
 		}
 
 		public bool Equals( Value other )
@@ -561,7 +561,7 @@ namespace Henchmen.Lua
 
 			var asStrA = a.RefVal as byte[];
 			if( asStrA != null )
-				return String.InternalEquals( asStrA, b.RefVal as byte[] );
+				return LString.InternalEquals( asStrA, b.RefVal as byte[] );
 
 			return false;
 		}
@@ -618,12 +618,12 @@ namespace Henchmen.Lua
 			return !v.Equals( n );
 		}
 
-		public static bool operator ==( Value v, String s )
+		public static bool operator ==( Value v, LString s )
 		{
 			return v.Equals( s );
 		}
 
-		public static bool operator !=( Value v, String s )
+		public static bool operator !=( Value v, LString s )
 		{
 			return !v.Equals( s );
 		}
@@ -658,7 +658,7 @@ namespace Henchmen.Lua
 
 			var asStr = RefVal as byte[];
 			if( asStr != null )
-				return String.InternalFromData( asStr ).ToString();
+				return LString.InternalFromData( asStr ).ToString();
 
 			var val = RefVal;
 
@@ -704,7 +704,7 @@ namespace Henchmen.Lua
 			Val = new NumBox( value );
 		}
 
-		public CompactValue( String value )
+		public CompactValue( LString value )
 		{
 			Val = value.InternalData;
 		}
@@ -767,7 +767,7 @@ namespace Henchmen.Lua
 
 			var asStrA = a.Val as byte[];
 			if( asStrA != null )
-				return String.InternalEquals( asStrA, b.Val as byte[] );
+				return LString.InternalEquals( asStrA, b.Val as byte[] );
 
 			return false;
 		}
@@ -795,7 +795,7 @@ namespace Henchmen.Lua
 
 			var asStr = Val as byte[];
 			if( asStr != null )
-				return String.InternalEquals( asStr, value.RefVal as byte[] );
+				return LString.InternalEquals( asStr, value.RefVal as byte[] );
 
 			return false;
 		}
@@ -806,10 +806,10 @@ namespace Henchmen.Lua
 			return asNum != null && asNum.Value == value;
 		}
 
-		public bool Equals( String value )
+		public bool Equals( LString value )
 		{
 			Debug.Assert( value.InternalData != null );
-			return String.InternalEquals( value.InternalData, Val as byte[] );
+			return LString.InternalEquals( value.InternalData, Val as byte[] );
 		}
 
 		public override int GetHashCode()
@@ -826,7 +826,7 @@ namespace Henchmen.Lua
 
 			var asStr = Val as byte[];
 			if( asStr != null )
-				return String.InternalGetHashCode( asStr );
+				return LString.InternalGetHashCode( asStr );
 
 			var val = Val;
 

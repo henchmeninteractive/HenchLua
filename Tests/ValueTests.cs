@@ -95,9 +95,9 @@ namespace Henchmen.Lua.Tests
 		[TestMethod]
 		public void Strings()
 		{
-			var a1 = new String( "A" );
-			var a2 = new String( "A" );
-			var b = new String( "B" );
+			var a1 = new LString( "A" );
+			var a2 = new LString( "A" );
+			var b = new LString( "B" );
 
 			Value va1 = a1;
 			Value va2 = a2;
@@ -122,7 +122,7 @@ namespace Henchmen.Lua.Tests
 
 			Value nil = 4;
 			Assert.AreEqual( 4, nil );
-			nil.Set( new String() );
+			nil.Set( new LString() );
 			Assert.AreEqual( Value.Nil, nil );
 			Assert.IsTrue( nil.IsNil );
 		}
