@@ -1040,16 +1040,19 @@ namespace Henchmen.Lua
 					}
 
 					metaTable = asTable.metatable;
+
+					if( metaTable == null )
+					{
+						value = Value.Nil;
+						return;
+					}
 				}
 				else
 				{
 					metaTable = GetMetatable( ref obj );
-				}
 
-				if( metaTable == null )
-				{
-					value = Value.Nil;
-					return;
+					if( metaTable == null )
+						throw new InvalidOperandException( "Can't index the given value." );
 				}
 
 				var index = metaTable[Literals.TagMethod_Index];
