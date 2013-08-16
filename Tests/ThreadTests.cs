@@ -114,6 +114,15 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void ForPairs()
+		{
+			var globals = new Table();
+			BaseLib.SetBaseMethods( globals );
+
+			RunTestScriptWithGlobals( "ForPairs.lua", globals, true );
+		}
+
+		[TestMethod]
 		public void If()
 		{
 			RunTestScript( "If.lua", 42 );

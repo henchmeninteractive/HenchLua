@@ -813,7 +813,30 @@ namespace Henchmen.Lua
 					break;
 
 				case OpCode.TForCall:
-					throw new NotImplementedException();
+					{
+						int ia = stackBase + op.A;
+
+						int callBase = ia + 3;
+						stack[callBase + 2] = stack[ia + 2];
+						stack[callBase + 1] = stack[ia + 1];
+						stack[callBase + 0] = stack[ia + 0];
+
+						stackTop = callBase + 3;
+
+						int numRet = op.C;
+
+						call.PC = ++pc;
+
+						BeginCall( callBase, 2, numRet );
+						call.ResultIndex = callBase;
+
+						Execute();
+
+						EndCall();
+
+						op = code[pc];
+						Debug.Assert( op.OpCode == OpCode.TForLoop );
+					}
 					goto case OpCode.TForLoop;
 
 				case OpCode.TForLoop:
