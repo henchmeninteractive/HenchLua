@@ -20,6 +20,18 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void MathChunk2()
+		{
+			RunTestScript( "MathChunk2.lua", 42 );
+		}
+
+		[TestMethod]
+		public void MathChunk3()
+		{
+			RunTestScript( "MathChunk3.lua", 42 );
+		}
+
+		[TestMethod]
 		public void Concat()
 		{
 			RunTestScript( "Concat.lua", new String( "abcabbcab-LOMG-bc" ) );

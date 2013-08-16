@@ -105,6 +105,12 @@
     <None Include="Scripts\Thread\Concat.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Scripts\Thread\MathChunk3.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Scripts\Thread\MathChunk2.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Scripts\Thread\ForPairs.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

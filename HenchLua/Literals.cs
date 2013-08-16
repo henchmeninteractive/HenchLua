@@ -88,13 +88,17 @@
 		Mode,
 		Len,
 		Eq,
+
+		//the arithmetic TMs are in the same order as the corresponding op codes
 		Add,
 		Sub,
 		Mul,
 		Div,
 		Mod,
 		Pow,
+
 		Unm,
+
 		Lt,
 		Le,
 		Concat,

@@ -138,6 +138,10 @@ namespace Henchmen.Lua
 				ret.AppendFormat( ": U{0}[{1}] = {2}", A, Rk( B ), Rk( C ) );
 				break;
 
+			case OpCode.NewTable:
+				ret.AppendFormat( ": R{0} = NewTable( nArr={1}, nNod={2} )", A, Helpers.FbToInt( B ), Helpers.FbToInt( C ) );
+				break;
+
 			case OpCode.Add:
 			case OpCode.Sub:
 			case OpCode.Mul:
@@ -145,6 +149,33 @@ namespace Henchmen.Lua
 			case OpCode.Mod:
 			case OpCode.Pow:
 				ret.AppendFormat( ": R{0} = {1} {3} {2}", A, Rk( B ), Rk( C ), GetArithOp( OpCode ) );
+				break;
+
+			case OpCode.Eq:
+			case OpCode.Lt:
+			case OpCode.Le:
+				ret.AppendFormat( ": if( {0} {2} {1} ) PC++", Rk( B ), Rk( C ), GetCmpOp( OpCode, A != 0 ) );
+				break;
+
+			case OpCode.Jmp:
+				ret.Append( ":" );
+				if( SBx != 0 )
+					ret.AppendFormat( " PC {1}= {0}", Math.Abs( SBx ), SBx > 0 ? "+" : "-" );
+				if( A != 0 )
+					ret.AppendFormat( " CloseUpVals( R# >= {0} )", A + 1 );
+				break;
+
+			case OpCode.TForLoop:
+				ret.AppendFormat( ": if( R{1} != nil ) {{ R{0} = R{1}, PC {3}= {2} }}", A, A + 1, Math.Abs( SBx ), SBx > 0 ? "+" : "-" );
+				break;
+
+			case OpCode.TForCall:
+				if( C == 0 )
+					ret.AppendFormat( ": R{0}( R{1}, R{2} )", A, A + 1, A + 2 );
+				else if( C == 1 )
+					ret.AppendFormat( ": R{3} = R{0}( R{1}, R{2} )", A, A + 1, A + 2, A + 3 );
+				else
+					ret.AppendFormat( ": R{3}..R{4} = R{0}( R{1}, R{2} )", A, A + 1, A + 2, A + 3, A + 3 + C - 1 );
 				break;
 
 			case OpCode.Closure:
@@ -162,7 +193,7 @@ namespace Henchmen.Lua
 				ret.AppendFormat( " R{0}", A );
 
 				if( B == 0 )
-					ret.AppendFormat( "( R{0}... )", A + 1 );
+					ret.AppendFormat( "( R{0}... )", A - 1 );
 				else if( B == 1 )
 					ret.Append( "()" );
 				else if( B == 2 )
@@ -224,6 +255,17 @@ namespace Henchmen.Lua
 			case OpCode.Div: return "/";
 			case OpCode.Mod: return "%";
 			case OpCode.Pow: return "^";
+			default: return string.Empty;
+			}
+		}
+
+		private static string GetCmpOp( OpCode op, bool reverse )
+		{
+			switch( op )
+			{
+			case OpCode.Eq: return reverse ? "!=" : "==";
+			case OpCode.Lt: return reverse ? ">=" : "<";
+			case OpCode.Le: return reverse ? ">" : "<=";
 			default: return string.Empty;
 			}
 		}

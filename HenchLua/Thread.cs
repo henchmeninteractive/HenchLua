@@ -197,8 +197,6 @@ namespace Henchmen.Lua
 		/// </summary>
 		internal void Execute()
 		{
-			var stackBase = call.StackBase;
-
 			Value[] upValues = null;
 			var proto = call.Callable as Proto;
 
@@ -214,17 +212,18 @@ namespace Henchmen.Lua
 				proto = asClosure.Proto;
 				upValues = asClosure.UpValues;
 			}
-			
+
+			var stackBase = call.StackBase;
+
 			var code = proto.Code;
 			var consts = proto.Constants;
-
-			var stack = this.stack;
 
 			for( int pc = call.PC; pc < code.Length; call.PC = ++pc )
 			{
 				var op = code[pc];
-
-				switch( op.OpCode )
+				
+				var opCode = op.OpCode;
+				switch( opCode )
 				{
 				case OpCode.Move:
 					stack[stackBase + op.A] = stack[stackBase + op.B];
@@ -351,131 +350,10 @@ namespace Henchmen.Lua
 					break;
 
 				case OpCode.Add:
-					{
-						var ib = op.B;
-						var b = (ib & Instruction.BitK) != 0 ?
-							consts[ib & ~Instruction.BitK] :
-							stack[stackBase + ib];
-
-						var ic = op.C;
-						var c = (ic & Instruction.BitK) != 0 ?
-							consts[ic & ~Instruction.BitK] :
-							stack[stackBase + ic];
-
-						if( b.RefVal == Value.NumTypeTag &&
-							c.RefVal == Value.NumTypeTag )
-						{
-							stack[stackBase + op.A].Set( b.NumVal + c.NumVal );
-						}
-						else
-						{
-							DoArith( Literals.TagMethod_Add, b.RefVal, c.RefVal,
-								out stack[stackBase + op.A] );
-						}
-					}
-					break;
-
 				case OpCode.Sub:
-					{
-						var ib = op.B;
-						var b = (ib & Instruction.BitK) != 0 ?
-							consts[ib & ~Instruction.BitK] :
-							stack[stackBase + ib];
-
-						var ic = op.C;
-						var c = (ic & Instruction.BitK) != 0 ?
-							consts[ic & ~Instruction.BitK] :
-							stack[stackBase + ic];
-
-						if( b.RefVal == Value.NumTypeTag &&
-							c.RefVal == Value.NumTypeTag )
-						{
-							stack[stackBase + op.A].Set( b.NumVal - c.NumVal );
-						}
-						else
-						{
-							DoArith( Literals.TagMethod_Sub, b.RefVal, c.RefVal,
-								out stack[stackBase + op.A] );
-						}
-					}
-					break;
-
 				case OpCode.Mul:
-					{
-						var ib = op.B;
-						var b = (ib & Instruction.BitK) != 0 ?
-							consts[ib & ~Instruction.BitK] :
-							stack[stackBase + ib];
-
-						var ic = op.C;
-						var c = (ic & Instruction.BitK) != 0 ?
-							consts[ic & ~Instruction.BitK] :
-							stack[stackBase + ic];
-
-						if( b.RefVal == Value.NumTypeTag &&
-							c.RefVal == Value.NumTypeTag )
-						{
-							stack[stackBase + op.A].Set( b.NumVal * c.NumVal );
-						}
-						else
-						{
-							DoArith( Literals.TagMethod_Mul, b.RefVal, c.RefVal,
-								out stack[stackBase + op.A] );
-						}
-					}
-					break;
-
 				case OpCode.Div:
-					{
-						var ib = op.B;
-						var b = (ib & Instruction.BitK) != 0 ?
-							consts[ib & ~Instruction.BitK] :
-							stack[stackBase + ib];
-
-						var ic = op.C;
-						var c = (ic & Instruction.BitK) != 0 ?
-							consts[ic & ~Instruction.BitK] :
-							stack[stackBase + ic];
-
-						if( b.RefVal == Value.NumTypeTag &&
-							c.RefVal == Value.NumTypeTag )
-						{
-							stack[stackBase + op.A].Set( b.NumVal / c.NumVal );
-						}
-						else
-						{
-							DoArith( Literals.TagMethod_Div, b.RefVal, c.RefVal,
-								out stack[stackBase + op.A] );
-						}
-					}
-					break;
-
 				case OpCode.Mod:
-					{
-						var ib = op.B;
-						var b = (ib & Instruction.BitK) != 0 ?
-							consts[ib & ~Instruction.BitK] :
-							stack[stackBase + ib];
-
-						var ic = op.C;
-						var c = (ic & Instruction.BitK) != 0 ?
-							consts[ic & ~Instruction.BitK] :
-							stack[stackBase + ic];
-
-						if( b.RefVal == Value.NumTypeTag &&
-							c.RefVal == Value.NumTypeTag )
-						{
-							//yes, this is the correct mod formula
-							stack[stackBase + op.A].Set( b.NumVal % c.NumVal );
-						}
-						else
-						{
-							DoArith( Literals.TagMethod_Mod, b.RefVal, c.RefVal,
-								out stack[stackBase + op.A] );
-						}
-					}
-					break;
-
 				case OpCode.Pow:
 					{
 						var ib = op.B;
@@ -491,12 +369,25 @@ namespace Henchmen.Lua
 						if( b.RefVal == Value.NumTypeTag &&
 							c.RefVal == Value.NumTypeTag )
 						{
-							stack[stackBase + op.A].Set( Math.Pow( b.NumVal, c.NumVal ) );
+							double rv, bv = b.NumVal, cv = c.NumVal;
+
+							switch( op.OpCode )
+							{
+							case OpCode.Add: rv = bv + cv; break;
+							case OpCode.Sub: rv = bv - cv; break;
+							case OpCode.Mul: rv = bv * cv; break;
+							case OpCode.Div: rv = bv / cv; break;
+							case OpCode.Mod: rv = bv % cv; break;
+							case OpCode.Pow: rv = Math.Pow( bv, cv ); break;
+							default: Debug.Assert( false ); rv = 0; break;
+							}
+
+							stack[stackBase + op.A].Set( rv );
 						}
 						else
 						{
-							DoArith( Literals.TagMethod_Add, b.RefVal, c.RefVal,
-								out stack[stackBase + op.A] );
+							DoArith( Literals.TagMethodNames[(int)TagMethods.Add + (opCode - OpCode.Add)],
+								b.RefVal, c.RefVal, out stack[stackBase + op.A] );
 						}
 					}
 					break;
@@ -557,66 +448,7 @@ namespace Henchmen.Lua
 					break;
 
 				case OpCode.Eq:
-					{
-						int b = op.B;
-						var bv = (b & Instruction.BitK) != 0 ?
-							consts[b & ~Instruction.BitK] :
-							stack[stackBase + b];
-
-						int c = op.C;
-						var cv = (c & Instruction.BitK) != 0 ?
-							consts[c & ~Instruction.BitK] :
-							stack[stackBase + c];
-
-						bool test =
-							(bv.RefVal == cv.RefVal &&
-							(bv.RefVal != Value.NumTypeTag || bv.NumVal == cv.NumVal)) ||
-							Equal( ref bv, ref cv );
-
-						if( test != (op.A != 0) )
-						{
-							pc++;
-						}
-						else
-						{
-							op = code[++pc];
-							Debug.Assert( op.OpCode == OpCode.Jmp );
-							goto case OpCode.Jmp;
-						}
-					}
-					break;
-
 				case OpCode.Lt:
-					{
-						int b = op.B;
-						var bv = (b & Instruction.BitK) != 0 ?
-							consts[b & ~Instruction.BitK] :
-							stack[stackBase + b];
-
-						int c = op.C;
-						var cv = (c & Instruction.BitK) != 0 ?
-							consts[c & ~Instruction.BitK] :
-							stack[stackBase + c];
-
-						bool test =
-							(bv.RefVal == Value.NumTypeTag &&
-							cv.RefVal == Value.NumTypeTag &&
-							bv.NumVal < cv.NumVal) ||
-							Less( ref bv, ref cv );
-
-						if( test != (op.A != 0) )
-						{
-							pc++;
-						}
-						else
-						{
-							op = code[++pc];
-							Debug.Assert( op.OpCode == OpCode.Jmp );
-							goto case OpCode.Jmp;
-						}
-					}
-					break;
-
 				case OpCode.Le:
 					{
 						int b = op.B;
@@ -629,11 +461,35 @@ namespace Henchmen.Lua
 							consts[c & ~Instruction.BitK] :
 							stack[stackBase + c];
 
-						bool test =
-							(bv.RefVal == Value.NumTypeTag &&
-							cv.RefVal == Value.NumTypeTag &&
-							bv.NumVal <= cv.NumVal) ||
-							LessEqual( ref bv, ref cv );
+						bool test;
+
+						switch( opCode )
+						{
+						case OpCode.Eq:
+							test =
+								(bv.RefVal == cv.RefVal &&
+								(bv.RefVal != Value.NumTypeTag || bv.NumVal == cv.NumVal)) ||
+								Equal( ref bv, ref cv );
+							break;
+
+						case OpCode.Lt:
+							test =
+								(bv.RefVal == Value.NumTypeTag &&
+								cv.RefVal == Value.NumTypeTag &&
+								bv.NumVal < cv.NumVal) ||
+								Less( ref bv, ref cv );
+							break;
+
+						case OpCode.Le:
+							test =
+								(bv.RefVal == Value.NumTypeTag &&
+								cv.RefVal == Value.NumTypeTag &&
+								bv.NumVal <= cv.NumVal) ||
+								LessEqual( ref bv, ref cv );
+							break;
+
+						default: Debug.Assert( false ); test = false; break;
+						}
 
 						if( test != (op.A != 0) )
 						{
@@ -689,7 +545,6 @@ namespace Henchmen.Lua
 				case OpCode.Call:
 					{
 						int funcIdx = stackBase + op.A;
-						object func = stack[funcIdx].RefVal;
 
 						int numArgs = op.B - 1;
 						if( numArgs == -1 )
