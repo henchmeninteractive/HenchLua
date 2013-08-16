@@ -49,6 +49,9 @@
 		public static readonly String TagMethod_Concat = new String( "__concat" );
 		public static readonly String TagMethod_Call = new String( "__call" );
 
+		public static readonly String TagMethod_Pairs = new String( "__pairs" );
+		public static readonly String TagMethod_IPairs = new String( "__ipairs" );
+
 		public static readonly String TagInfo_Metatable = new String( "__metatable" );
 
 		/// <summary>

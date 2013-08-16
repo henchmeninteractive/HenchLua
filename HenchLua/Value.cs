@@ -259,7 +259,7 @@ namespace Henchmen.Lua
 				return;
 			}
 
-			if( value is byte[] )
+			if( value is byte[] || value is Value[] )
 				value = new UserDataWrapper( value );
 
 			RefVal = value;
