@@ -133,6 +133,36 @@ namespace Henchmen.Lua
 			stackTop = newTop;
 		}
 
+		//helpers to make it easy to set up the stack for a return
+		//each overload returns the number of arguments given
+
+		public int SetStack( Value v0 )
+		{
+			StackTop = 1;
+			stack[call.StackBase + 0] = v0;
+
+			return 1;
+		}
+
+		public int SetStack( Value v0, Value v1 )
+		{
+			StackTop = 2;
+			stack[call.StackBase + 0] = v0;
+			stack[call.StackBase + 1] = v1;
+
+			return 2;
+		}
+
+		public int SetStack( Value v0, Value v1, Value v2 )
+		{
+			StackTop = 3;
+			stack[call.StackBase + 0] = v0;
+			stack[call.StackBase + 1] = v1;
+			stack[call.StackBase + 2] = v2;
+
+			return 3;
+		}
+
 		#endregion
 
 		private void CheckStack( int minLen )

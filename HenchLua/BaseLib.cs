@@ -52,18 +52,9 @@ namespace Henchmen.Lua
 			Value val;
 
 			if( tbl.GetNext( ref key, out val ) )
-			{
-				l.StackTop = 2;
-				l[1] = key;
-				l[2] = val;
-				return 2;
-			}
+				return l.SetStack( key, val );
 			else
-			{
-				l.StackTop = 1;
-				l[1] = Value.Nil;
-				return 1;
-			}
+				return l.SetStack( Value.Nil );
 		}
 
 		private static int BPairs( Thread l )
@@ -79,10 +70,7 @@ namespace Henchmen.Lua
 			}
 			else
 			{
-				l.StackTop = 3;
-				l[1] = Cb_BNext;
-				l[2] = val;
-				l[3] = Value.Nil;
+				l.SetStack( Cb_BNext, val, Value.Nil );
 			}
 
 			return 3;
@@ -107,10 +95,7 @@ namespace Henchmen.Lua
 				vmt = Value.Nil;
 			}
 
-			l.StackTop = 1;
-			l[1] = vmt;
-
-			return 1;			
+			return l.SetStack( vmt );
 		}
 
 		private static Table GetMetatable( Value value )
