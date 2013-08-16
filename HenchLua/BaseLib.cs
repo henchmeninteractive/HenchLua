@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Henchmen.Lua
 {
 	public static class BaseLib
@@ -11,6 +13,8 @@ namespace Henchmen.Lua
 		public static readonly String Name_BNext = "next";
 		public static readonly String Name_BPairs = "pairs";
 
+		public static readonly String Name_BType = "type";
+
 		public static void SetBaseMethods( Table globals )
 		{
 			globals[Name_BNext] = Cb_BNext;
@@ -18,9 +22,25 @@ namespace Henchmen.Lua
 
 			globals[Name_BGetMetaTable] = (Callable)BGetMetatable;
 			globals[Name_BSetMetaTable] = (Callable)BSetMetatable;
+
+			globals[Name_BType] = (Callable)BType;
 		}
 
 		private static Callable Cb_BNext = (Callable)BNext;
+
+		private static int BType( Thread l )
+		{
+			var stk = l.Stack;
+
+			stk.Top = 1;
+
+			int iType = (int)stk[1].ValueType;
+			Debug.Assert( iType >= 0 && iType < Literals.TypeNames.Length );
+
+			stk[1] = Literals.TypeNames[iType];
+
+			return 1;
+		}
 
 		private static int BNext( Thread l )
 		{
