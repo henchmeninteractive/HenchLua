@@ -42,6 +42,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="Literals.cs" />
+    <Compile Include="MathLib.cs" />
     <Compile Include="Proto.cs" />
     <Compile Include="LString.cs" />
     <Compile Include="Table.cs" />
