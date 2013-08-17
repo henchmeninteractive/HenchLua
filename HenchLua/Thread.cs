@@ -480,25 +480,20 @@ namespace Henchmen.Lua
 						switch( opCode )
 						{
 						case OpCode.Eq:
-							test =
-								(bv.RefVal == cv.RefVal &&
-								(bv.RefVal != Value.NumTypeTag || bv.NumVal == cv.NumVal)) ||
+							test = bv.RefVal == cv.RefVal ?
+								bv.RefVal != Value.NumTypeTag || bv.NumVal == cv.NumVal :
 								Equal( ref bv, ref cv );
 							break;
 
 						case OpCode.Lt:
-							test =
-								(bv.RefVal == Value.NumTypeTag &&
-								cv.RefVal == Value.NumTypeTag &&
-								bv.NumVal < cv.NumVal) ||
+							test = (bv.RefVal == Value.NumTypeTag && cv.RefVal == Value.NumTypeTag) ?
+								bv.NumVal < cv.NumVal :
 								Less( ref bv, ref cv );
 							break;
 
 						case OpCode.Le:
-							test =
-								(bv.RefVal == Value.NumTypeTag &&
-								cv.RefVal == Value.NumTypeTag &&
-								bv.NumVal <= cv.NumVal) ||
+							test = (bv.RefVal == Value.NumTypeTag && cv.RefVal == Value.NumTypeTag) ?
+								bv.NumVal <= cv.NumVal :
 								LessEqual( ref bv, ref cv );
 							break;
 

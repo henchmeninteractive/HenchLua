@@ -138,6 +138,10 @@ namespace Henchmen.Lua
 				ret.AppendFormat( ": U{0}[{1}] = {2}", A, Rk( B ), Rk( C ) );
 				break;
 
+			case OpCode.Self:
+				ret.AppendFormat( ": R{0} = R{1}, R{2} = R{1}[{3}]", A + 1, B, A, Rk( C ) );
+				break;
+
 			case OpCode.NewTable:
 				ret.AppendFormat( ": R{0} = NewTable( nArr={1}, nNod={2} )", A, Helpers.FbToInt( B ), Helpers.FbToInt( C ) );
 				break;
