@@ -7,29 +7,34 @@ namespace Henchmen.Lua
 {
 	public static class BaseLib
 	{
-		public static readonly LString Name_BGetMetaTable = "getmetatable";
-		public static readonly LString Name_BSetMetaTable = "setmetatable";
+		public static readonly LString Name_GetMetatable = "getmetatable";
+		public static readonly Callable GetMetatable = (Callable)BGetMetatable;
+		public static readonly LString Name_SetMetatable = "setmetatable";
+		public static readonly Callable SetMetatable = (Callable)BSetMetatable;
 
-		public static readonly LString Name_BNext = "next";
-		public static readonly LString Name_BPairs = "pairs";
-		public static readonly LString Name_BIPairs = "ipairs";
+		public static readonly LString Name_Pairs = "pairs";
+		public static readonly Callable Pairs = (Callable)BPairs;
+		public static readonly LString Name_Next = "next";
+		public static readonly Callable Next = (Callable)BNext;
+		
+		public static readonly LString Name_IPairs = "ipairs";
+		public static readonly Callable IPairs = (Callable)BIPairs;
+		public static readonly Callable INext = (Callable)BINext;
 
 		public static readonly LString Name_BType = "type";
+		public static readonly Callable Type = (Callable)BType;
 
 		public static void SetBaseMethods( Table globals )
 		{
-			globals[Name_BNext] = Cb_BNext;
-			globals[Name_BPairs] = (Callable)BPairs;
-			globals[Name_BIPairs] = (Callable)BIPairs;
+			globals[Name_Next] = Next;
+			globals[Name_Pairs] = Pairs;
+			globals[Name_IPairs] = IPairs;
 
-			globals[Name_BGetMetaTable] = (Callable)BGetMetatable;
-			globals[Name_BSetMetaTable] = (Callable)BSetMetatable;
+			globals[Name_GetMetatable] = GetMetatable;
+			globals[Name_SetMetatable] = SetMetatable;
 
-			globals[Name_BType] = (Callable)BType;
+			globals[Name_BType] = Type;
 		}
-
-		private static Callable Cb_BNext = (Callable)BNext;
-		private static Callable Cb_BINext = (Callable)BINext;
 
 		private static int BType( Thread l )
 		{
@@ -63,7 +68,7 @@ namespace Henchmen.Lua
 		private static int BPairs( Thread l )
 		{
 			var val = l[1];
-			var mt = GetMetatable( val );
+			var mt = GetMetatableImp( val );
 
 			Value mmt;
 			if( mt != null && mt.TryGetValue( Literals.TagMethod_Pairs, out mmt ) )
@@ -73,7 +78,7 @@ namespace Henchmen.Lua
 			}
 			else
 			{
-				l.SetStack( Cb_BNext, val, Value.Nil );
+				l.SetStack( Next, val, Value.Nil );
 			}
 
 			return 3;
@@ -99,7 +104,7 @@ namespace Henchmen.Lua
 		private static int BIPairs( Thread l )
 		{
 			var val = l[1];
-			var mt = GetMetatable( val );
+			var mt = GetMetatableImp( val );
 
 			Value mmt;
 			if( mt != null && mt.TryGetValue( Literals.TagMethod_IPairs, out mmt ) )
@@ -109,7 +114,7 @@ namespace Henchmen.Lua
 			}
 			else
 			{
-				l.SetStack( Cb_BINext, val, 0 );
+				l.SetStack( INext, val, 0 );
 			}
 
 			return 3;
@@ -117,7 +122,7 @@ namespace Henchmen.Lua
 
 		private static int BGetMetatable( Thread l )
 		{
-			var mt = GetMetatable( l[1] );
+			var mt = GetMetatableImp( l[1] );
 			
 			Value vmt;
 
@@ -137,7 +142,7 @@ namespace Henchmen.Lua
 			return l.SetStack( vmt );
 		}
 
-		private static Table GetMetatable( Value value )
+		private static Table GetMetatableImp( Value value )
 		{
 			var asTable = value.ToTable();
 			if( asTable != null )
@@ -152,7 +157,7 @@ namespace Henchmen.Lua
 
 		private static int BSetMetatable( Thread l )
 		{
-			var mt = GetMetatable( l[1] );
+			var mt = GetMetatableImp( l[1] );
 			if( mt != null && mt.ContainsKey( Literals.TagInfo_Metatable ) )
 				throw new ArgumentException( "Can't change a protected metatable." );
 
@@ -160,13 +165,13 @@ namespace Henchmen.Lua
 			if( mt == null )
 				throw new ArgumentException( "Expected a table." );
 
-			SetMetatable( l[1], mt );
+			SetMetatableImp( l[1], mt );
 			l.StackTop = 1;
 
 			return 1;
 		}
 
-		private static void SetMetatable( Value value, Table mt )
+		private static void SetMetatableImp( Value value, Table mt )
 		{
 			var asTable = value.ToTable();
 			if( asTable != null )
