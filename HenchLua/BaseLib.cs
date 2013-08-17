@@ -12,6 +12,7 @@ namespace Henchmen.Lua
 
 		public static readonly LString Name_BNext = "next";
 		public static readonly LString Name_BPairs = "pairs";
+		public static readonly LString Name_BIPairs = "ipairs";
 
 		public static readonly LString Name_BType = "type";
 
@@ -19,6 +20,7 @@ namespace Henchmen.Lua
 		{
 			globals[Name_BNext] = Cb_BNext;
 			globals[Name_BPairs] = (Callable)BPairs;
+			globals[Name_BIPairs] = (Callable)BIPairs;
 
 			globals[Name_BGetMetaTable] = (Callable)BGetMetatable;
 			globals[Name_BSetMetaTable] = (Callable)BSetMetatable;
@@ -27,6 +29,7 @@ namespace Henchmen.Lua
 		}
 
 		private static Callable Cb_BNext = (Callable)BNext;
+		private static Callable Cb_BINext = (Callable)BINext;
 
 		private static int BType( Thread l )
 		{
@@ -71,6 +74,42 @@ namespace Henchmen.Lua
 			else
 			{
 				l.SetStack( Cb_BNext, val, Value.Nil );
+			}
+
+			return 3;
+		}
+
+		private static int BINext( Thread l )
+		{
+			l.StackTop = 2;
+
+			var tbl = (Table)l[1];
+			if( tbl == null )
+				throw new InvalidCastException();
+
+			var key = (int)(double)l[2] + 1;
+			Value val;
+
+			if( tbl.TryGetValue( key, out val ) )
+				return l.SetStack( key, val );
+			else
+				return l.SetStack( Value.Nil );
+		}
+
+		private static int BIPairs( Thread l )
+		{
+			var val = l[1];
+			var mt = GetMetatable( val );
+
+			Value mmt;
+			if( mt != null && mt.TryGetValue( Literals.TagMethod_IPairs, out mmt ) )
+			{
+				l.StackTop = 1;
+				l.Call( (Callable)mmt, 1, 3 );
+			}
+			else
+			{
+				l.SetStack( Cb_BINext, val, 0 );
 			}
 
 			return 3;
