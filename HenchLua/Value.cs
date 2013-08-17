@@ -449,6 +449,14 @@ namespace Henchmen.Lua
 			return value.NumVal;
 		}
 
+		public static explicit operator float( Value value )
+		{
+			if( value.RefVal != NumTypeTag )
+				throw new InvalidCastException();
+
+			return (float)value.NumVal;
+		}
+
 		public static explicit operator LString( Value value )
 		{
 			var asStr = value.RefVal as byte[];
