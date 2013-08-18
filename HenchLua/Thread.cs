@@ -1110,6 +1110,9 @@ namespace Henchmen.Lua
 			if( asStr != null )
 				return LString.InternalEquals( asStr, b.RefVal as byte[] );
 
+			if( a.RefVal == BoolBox.True || a.RefVal == BoolBox.False )
+				return b.RefVal == a.RefVal;
+
 			throw new NotImplementedException();
 		}
 
