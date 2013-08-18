@@ -126,5 +126,21 @@ namespace Henchmen.Lua.Tests
 			Assert.AreEqual( Value.Nil, nil );
 			Assert.IsTrue( nil.IsNil );
 		}
+
+		[TestMethod]
+		public void Sentinels()
+		{
+			var s0 = Value.CreateSentinel( "AAA" );
+			var s1 = Value.CreateSentinel( "AAA" );
+			var s2 = Value.CreateSentinel( "AAB" );
+
+			Assert.AreEqual( s0, s0 );
+			Assert.AreEqual( s1, s1 );
+			Assert.AreEqual( s2, s2 );
+
+			Assert.AreNotEqual( s0, s1 );
+			Assert.AreNotEqual( s0, s2 );
+			Assert.AreNotEqual( s1, s2 );
+		}
 	}
 }

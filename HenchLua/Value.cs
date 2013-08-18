@@ -143,6 +143,11 @@ namespace Henchmen.Lua
 			Set( value );
 		}
 
+		public static Value CreateSentinel( string name )
+		{
+			return new Value( new Sentinel( name ) );
+		}
+
 		#region implicit operator
 
 		public static implicit operator Value( bool value )
@@ -686,6 +691,24 @@ namespace Henchmen.Lua
 				Debug.Assert( value != null );
 
 				this.Value = value;
+			}
+		}
+
+		public class Sentinel
+		{
+			public Sentinel( string name )
+			{
+				if( name == null )
+					throw new ArgumentNullException( "name" );
+
+				this.Name = name;
+			}
+
+			public string Name { get; private set; }
+
+			public override string ToString()
+			{
+				return "Sentinel: " + Name;
 			}
 		}
 	}
