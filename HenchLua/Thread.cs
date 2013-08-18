@@ -1061,7 +1061,7 @@ namespace Henchmen.Lua
 				obj = index;				
 			}
 
-			throw new LuaException( "Metatable __index loop." );
+			throw new LuaException( "Very long metatable __index cycle." );
 		}
 
 		private void SetTable( object obj, ref Value key, ref Value value )
@@ -1091,6 +1091,12 @@ namespace Henchmen.Lua
 			return null;
 		}
 
+		private Value GetMetamethod( ref Value val, LString tmName )
+		{
+			var mt = GetMetatable( ref val );
+			return mt != null ? mt[tmName] : Value.Nil;
+		}
+
 		private bool ToNumber( ref Value val )
 		{
 			if( val.RefVal == Value.NumTypeTag )
@@ -1113,7 +1119,26 @@ namespace Henchmen.Lua
 			if( a.RefVal == BoolBox.True || a.RefVal == BoolBox.False )
 				return b.RefVal == a.RefVal;
 
-			throw new NotImplementedException();
+			//and now we go into the full eq
+
+			var ta = a.ValueType;
+			var tb = b.ValueType;
+
+			if( ta != tb || (ta != LValueType.Table && ta != LValueType.UserData) )
+				return false;
+
+			//grab the metamethods
+
+			var eqa = GetMetamethod( ref a, Literals.TagMethod_Eq );
+			var eqb = GetMetamethod( ref b, Literals.TagMethod_Eq );
+
+			if( eqa != eqb || eqa.IsNil )
+				return false;
+
+			Value ret;
+			CallMetaMethod( eqa.RefVal, ref a, ref b, out ret );
+
+			return ret.ToBool();
 		}
 
 		private bool Less( ref Value a, ref Value b )

@@ -169,6 +169,12 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void Eq()
+		{
+			RunTestScript( "Eq.lua", 42 );
+		}
+
+		[TestMethod]
 		public void StrLen()
 		{
 			RunTestScript( "StrLen.lua", 42 );
