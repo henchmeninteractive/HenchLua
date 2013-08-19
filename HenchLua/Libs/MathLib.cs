@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Henchmen.Lua
+namespace Henchmen.Lua.Libs
 {
 	public static class MathLib
 	{

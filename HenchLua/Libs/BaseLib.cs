@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace Henchmen.Lua
+namespace Henchmen.Lua.Libs
 {
 	public static class BaseLib
 	{

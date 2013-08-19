@@ -29,7 +29,7 @@ namespace Henchmen.Lua.Tests
 			var thread = new Thread();
 
 			var globals = new Table();
-			BaseLib.SetBaseMethods( globals );
+			Libs.BaseLib.SetBaseMethods( globals );
 
 			var func = Helpers.LoadFunc( "MetaTable/" + script, globals );
 			Function.Optimize( func );

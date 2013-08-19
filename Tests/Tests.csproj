@@ -59,6 +59,7 @@
     <Compile Include="ProtoTests.cs" />
     <Compile Include="ThreadTests.cs" />
     <Compile Include="MetaTableTestss.cs" />
+    <Compile Include="TableLibTests.cs" />
     <Compile Include="ValueTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -75,6 +76,12 @@
     <Content Include="lua.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="Scripts\Libs\TableInsert2.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Scripts\Libs\TableInsert.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Scripts\MetaTable\Index2.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

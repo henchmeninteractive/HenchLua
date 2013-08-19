@@ -35,14 +35,15 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseLib.cs" />
+    <Compile Include="Libs\BaseLib.cs" />
     <Compile Include="Box.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="Function.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Instruction.cs" />
+    <Compile Include="Libs\TableLib.cs" />
     <Compile Include="Literals.cs" />
-    <Compile Include="MathLib.cs" />
+    <Compile Include="Libs\MathLib.cs" />
     <Compile Include="Proto.cs" />
     <Compile Include="LString.cs" />
     <Compile Include="Table.cs" />
