@@ -414,6 +414,28 @@ namespace Henchmen.Lua
 			return RefVal;
 		}
 
+		/// <summary>
+		/// Attempts to cast to a Table or UserData type,
+		/// returning <c>null</c> on failure.
+		/// </summary>
+		public T As<T>()
+			where T : class
+		{
+			var val = RefVal;
+
+			if( val == NumTypeTag ||
+			   	val == BoolBox.True || val == BoolBox.False ||
+			   	val is byte[] ||
+			   	Callable.IsCallable( val ) )
+				return null;
+
+			var asWrapper = val as UserDataWrapper;
+			if( asWrapper != null )
+				val = asWrapper.Value;
+
+			return val as T;
+		}
+
 		#region explicit operator
 
 		//these are similar to the To* methods
