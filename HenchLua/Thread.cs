@@ -163,6 +163,17 @@ namespace Henchmen.Lua
 			return 3;
 		}
 
+		public int SetStack( Value v0, Value v1, Value v2, Value v3 )
+		{
+			StackTop = 4;
+			stack[call.StackBase + 0] = v0;
+			stack[call.StackBase + 1] = v1;
+			stack[call.StackBase + 2] = v2;
+			stack[call.StackBase + 3] = v3;
+
+			return 4;
+		}
+
 		#endregion
 
 		private void CheckStack( int minLen )

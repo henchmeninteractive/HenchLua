@@ -69,6 +69,7 @@ namespace Henchmen.Lua
 		}
 		
 		public bool IsNil { get { return RefVal == null; } }
+		public bool IsNotNil { get { return RefVal != null; } }
 		
 		public bool IsBool { get { return RefVal == BoolBox.True || RefVal == BoolBox.False; } }
 		public bool IsTrue { get { return RefVal == BoolBox.True; } }
@@ -903,26 +904,48 @@ namespace Henchmen.Lua
 
 	public static class MetatableHelpers
 	{
-		public static Table GetMetatable( this Table table )
+		public static Table GetMetatable( Table table )
 		{
 			if( table == null )
-				throw new ArgumentNullException( "table" );
+				return null;
 
 			return table.metatable;
 		}
 
-		public static Table GetMetatable( this IHasMetatable obj )
+		public static Table GetMetatable( IHasMetatable obj )
 		{
 			if( obj == null )
-				throw new ArgumentNullException( "obj" );
+				return null;
 			
 			return obj.Metatable;
+		}
+
+		public static Table GetMetatable( Value obj )
+		{
+			if( obj.IsNil )
+				return null;
+
+			var val = obj.RefVal;
+
+			var asTable = val as Table;
+			if( asTable != null )
+				return asTable.metatable;
+
+			var asWrapper = val as Value.UserDataWrapper;
+			if( asWrapper != null )
+				val = asWrapper.Value;
+
+			var asHasMt = val as IHasMetatable;
+			if( asHasMt != null )
+				return asHasMt.Metatable;
+
+			return null;
 		}
 
 		public static Table GetMetatable( object obj )
 		{
 			if( obj == null )
-				throw new ArgumentNullException( "obj" );
+				return null;
 
 			var asTable = obj as Table;
 			if( asTable != null )
