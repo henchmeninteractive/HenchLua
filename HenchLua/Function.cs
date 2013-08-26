@@ -231,6 +231,7 @@ namespace Henchmen.Lua
 		}
 
 		public bool IsNil { get { return Val == null; } }
+		public bool IsNotNil { get { return Val != null; } }
 
 		public bool IsUserFunction { get { return Val is UserFunction; } }
 
