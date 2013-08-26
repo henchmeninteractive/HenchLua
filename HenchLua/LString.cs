@@ -97,7 +97,38 @@ namespace Henchmen.Lua
 
 			UpdateHashCode();
 		}
-		
+
+		/// <summary>
+		/// Gets the string's raw data buffer.
+		/// </summary>
+		/// <param name='buffer'>
+		/// On exit, the buffer containing the string data. This will be <c>null</c> for nil strings.
+		/// </param>
+		/// <param name='index'>
+		/// On exit, the index in the buffer where the string data begins. This will be -1 for nil strings.
+		/// </param>
+		/// <param name='count'>
+		/// On exit, the length of the string data. This will be zero for nil strings.
+		/// </param>
+		/// <remarks>
+		/// Things will break (and break badly) if you modify the contents
+		/// of this buffer. That's why this method is tagged <c>Unsafe</c>.
+		/// </remarks>
+		public void UnsafeGetDataBuffer( out byte[] buffer, out int index, out int count )
+		{
+			buffer = InternalData;
+			if( buffer != null )
+			{
+				index = BufferDataOffset;
+				count = buffer.Length - BufferDataOffset;
+			}
+			else
+			{
+				index = -1;
+				count = 0;
+			}
+		}
+
 		internal static LString InternalFromData( byte[] internalData )
 		{
 			Debug.Assert( internalData != null );
