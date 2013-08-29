@@ -100,6 +100,12 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void ClosedUpValue4()
+		{
+			RunTestScript( "ClosedUpValue4.lua", 42 );
+		}
+
+		[TestMethod]
 		public void SimpleLoop()
 		{
 			RunTestScript( "SimpleLoop.lua", 42 );

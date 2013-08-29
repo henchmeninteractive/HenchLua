@@ -1237,10 +1237,36 @@ namespace Henchmen.Lua
 			rec.UpValueIndex = index;
 			rec.StackIndex = stackIndex;
 
-			Debug.Assert( numOpenUpValues == 0 ||
-				openUpValues[numOpenUpValues - 1].StackIndex <= rec.StackIndex );
+			//insert it in the right spot
+			int idx = 0;
+			int max = numOpenUpValues - 1;
 
-			openUpValues[numOpenUpValues++] = rec;
+			while( idx <= max )
+			{
+				int mid = (idx + max) / 2;
+				int cmp = openUpValues[mid].StackIndex - stackIndex;
+
+				if( cmp == 0 )
+				{
+					idx = mid;
+					break;
+				}
+
+				if( cmp > 0 )
+					max = mid - 1;
+				else
+					idx = mid + 1;
+			}
+
+			Debug.Assert( numOpenUpValues == 0 ||
+				openUpValues[idx].StackIndex <= rec.StackIndex );
+
+			if( idx < numOpenUpValues )
+				Array.Copy( openUpValues, idx, openUpValues, idx + 1, numOpenUpValues - idx );
+
+			openUpValues[idx] = rec;
+
+			numOpenUpValues++;
 		}
 
 		/// <summary>
