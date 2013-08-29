@@ -295,7 +295,7 @@ namespace Henchmen.Lua
 						Value upVal;
 						ReadUpValue( ref upValues[op.B], out upVal );
 
-						GetTable( upVal, ref key, out stack[stackBase + op.A] );
+						GetTable( upVal, ref key, stackBase + op.A );
 					}
 					break;
 
@@ -307,7 +307,7 @@ namespace Henchmen.Lua
 							stack[stackBase + c];
 
 						GetTable( stack[stackBase + op.B],
-							ref key, out stack[stackBase + op.A] );
+							ref key, stackBase + op.A );
 					}
 					break;
 
@@ -370,7 +370,7 @@ namespace Henchmen.Lua
 							consts[c & ~Instruction.BitK] :
 							stack[stackBase + c];
 
-						GetTable( table, ref key, out stack[stackBase + op.A] );
+						GetTable( table, ref key, stackBase + op.A );
 					}
 					break;
 
@@ -1028,8 +1028,10 @@ namespace Henchmen.Lua
 			stackTop = saveTop;
 		}
 
-		private void GetTable( Value obj, ref Value key, out Value value )
+		private Value GetTable( Value obj, ref Value key )
 		{
+			Value ret;
+
 			for( int i = 0; i < 100; i++ )
 			{
 				Table metaTable;
@@ -1040,18 +1042,15 @@ namespace Henchmen.Lua
 					int loc = asTable.FindValue( key );
 					if( loc != 0 )
 					{
-						asTable.ReadValue( loc, out value );
-						if( value.RefVal != null )
-							return;
+						asTable.ReadValue( loc, out ret );
+						if( ret.RefVal != null )
+							return ret;
 					}
 
 					metaTable = asTable.metatable;
 
 					if( metaTable == null )
-					{
-						value = Value.Nil;
-						return;
-					}
+						return new Value();
 				}
 				else
 				{
@@ -1065,14 +1064,32 @@ namespace Henchmen.Lua
 
 				if( Callable.IsCallable( index.RefVal ) )
 				{
-					CallMetaMethod( index.RefVal, ref obj, ref key, out value );
-					return;
+					CallMetaMethod( index.RefVal, ref obj, ref key, out ret );
+					return ret;
 				}
 
 				obj = index;				
 			}
 
 			throw new LuaException( "Very long metatable __index cycle." );
+		}
+
+		private void GetTable( Value obj, ref Value key, int retStkIdx )
+		{
+			/*
+				This MUST NOT be rewritten as a single line!
+
+				Doing so is incorrect because the left-hand
+				expression (most pertinently, "stack") is
+				evaluated before the right-hand expression.
+				This is a problem because GetTable can change
+				the value of stack (growing it, for instance,
+				to accommodate a metamethod call), and the return
+				value must land in the NEW stack.
+			*/
+			
+			var val = GetTable( obj, ref key );
+			stack[retStkIdx] = val;
 		}
 
 		private void SetTable( object obj, ref Value key, ref Value value )

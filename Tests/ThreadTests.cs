@@ -285,6 +285,28 @@ namespace Henchmen.Lua.Tests
 			Assert.AreEqual( 66, thread[3] );
 		}
 
+		[TestMethod]
+		public void DeepOpSelf()
+		{
+			var globals = new Table();
+			Libs.BaseLib.SetBaseMethods( globals );
+
+			globals["g__index"] = (Callable)(l =>
+			{
+				var t = (Table)l[1];
+				var k = (LString)l[2];
+
+				var kstr = k.ToString();
+				kstr += "_";
+
+				k = new LString( kstr );
+
+				return l.SetStack( t[k] );
+			});
+
+			RunTestScriptWithGlobals( "DeepOpSelf.lua", globals, 42 );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			RunTestScriptWithGlobals( script, new Table(), expectedResults );
