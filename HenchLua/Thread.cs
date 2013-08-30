@@ -174,6 +174,25 @@ namespace Henchmen.Lua
 			return 4;
 		}
 
+		public Value[] GetStackElements( int index0, int index1 )
+		{
+			if( index0 <= 0 || index1 <= 0 )
+				throw new ArgumentOutOfRangeException( "Only base-relative indexes are allowed." );
+
+			if( index1 < index0 )
+				return new Value[0];
+
+			index0 = RealIndex( index0 );
+			index1 = RealIndex( index1 );
+
+			int count = index1 - index0 + 1;
+
+			var ret = new Value[count];
+			Array.Copy( stack, index0, ret, 0, count );
+
+			return ret;
+		}
+
 		#endregion
 
 		private void CheckStack( int minLen )
@@ -881,11 +900,16 @@ namespace Henchmen.Lua
 			if( val.RefVal is byte[] )
 				return true;
 
-			if( val.RefVal == Value.NumTypeTag )
-				throw new NotImplementedException();
+			if( val.RefVal != Value.NumTypeTag )
+				return false;
 
-			return false;
+			int len = Helpers.NumToStr( fmtBuf, 0, val.NumVal, 14 );
+			val = new LString( fmtBuf, 0, len );
+
+			return true;
 		}
+
+		private byte[] fmtBuf = new byte[32];
 
 		private void ExecuteUserCode()
 		{

@@ -38,6 +38,18 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void Concat2()
+		{
+			RunTestScript( "Concat2.lua", new LString( "abc42" ) );
+		}
+
+		[TestMethod]
+		public void NumFormat()
+		{
+			RunTestScript( "NumFormat.lua", 42 );
+		}
+
+		[TestMethod]
 		public void SimpleCall()
 		{
 			RunTestScript( "Call.lua", 42 );
@@ -320,6 +332,8 @@ namespace Henchmen.Lua.Tests
 
 		private static void RunTestScriptWithGlobals( string script, Table globals, params Value[] expectedResults )
 		{
+			globals["assertEqual"] = (Callable)(l => { Assert.AreEqual( l[1], l[2] ); return 0; });
+
 			var thread = new Thread();
 
 			var func = Helpers.LoadFunc( "Thread/" + script, globals );

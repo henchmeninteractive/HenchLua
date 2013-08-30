@@ -77,7 +77,7 @@ namespace Henchmen.Lua
 			if( rawBytes.Length - index < count )
 				throw new ArgumentOutOfRangeException( "count" );
 
-			this.InternalData = new byte[4 + rawBytes.Length];
+			this.InternalData = new byte[4 + count];
 			Array.Copy( rawBytes, index, this.InternalData, 4, count );
 
 			UpdateHashCode();
