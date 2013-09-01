@@ -153,7 +153,7 @@ namespace Henchmen.Lua
 		/// <summary>
 		/// Gets the length of the string, in bytes.
 		/// </summary>
-		public int Lenght { get { return InternalData != null ? InternalData.Length - 4 : 0; } }
+		public int Length { get { return InternalData != null ? InternalData.Length - 4 : 0; } }
 
 		public byte this[int index]
 		{
@@ -170,14 +170,14 @@ namespace Henchmen.Lua
 		{
 			if( buffer == null )
 				throw new ArgumentNullException( "buffer" );
-			if( index < 0 || buffer.Length - index < Lenght )
+			if( index < 0 || buffer.Length - index < Length )
 				throw new ArgumentOutOfRangeException( "index" );
 
 			if( InternalData == null )
 				return;
 
 			Array.Copy( InternalData, BufferDataOffset,
-				buffer, index, Lenght );
+				buffer, index, Length );
 		}
 
 		public LString Substring( int index, int count )
@@ -192,7 +192,7 @@ namespace Henchmen.Lua
 				throw new ArgumentOutOfRangeException( "index" );
 			if( count < 0 )
 				throw new ArgumentOutOfRangeException( "count" );
-			if( Lenght - index < count )
+			if( Length - index < count )
 				throw new ArgumentOutOfRangeException( "count" );
 
 			return new LString( InternalData, 4 + index, count );
@@ -200,7 +200,7 @@ namespace Henchmen.Lua
 
 		public LString Substring( int index )
 		{
-			return Substring( index, Lenght - index );
+			return Substring( index, Length - index );
 		}
 
 		internal static bool InternalEquals( byte[] a, byte[] b )
