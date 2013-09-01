@@ -166,6 +166,20 @@ namespace Henchmen.Lua
 			}
 		}
 
+		public void CopyTo( byte[] buffer, int index )
+		{
+			if( buffer == null )
+				throw new ArgumentNullException( "buffer" );
+			if( index < 0 || buffer.Length - index < Lenght )
+				throw new ArgumentOutOfRangeException( "index" );
+
+			if( InternalData == null )
+				return;
+
+			Array.Copy( InternalData, BufferDataOffset,
+				buffer, index, Lenght );
+		}
+
 		public LString Substring( int index, int count )
 		{
 			if( InternalData == null )
