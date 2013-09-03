@@ -19,6 +19,7 @@ namespace Henchmen.Lua
 		internal byte[] InternalData;
 
 		public bool IsNil { get { return InternalData == null; } }
+		public bool IsNotNil { get { return InternalData != null; } }
 
 		/// <summary>
 		/// Initializes a String from a .NET String and
