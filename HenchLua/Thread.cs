@@ -909,6 +909,12 @@ namespace Henchmen.Lua
 			return true;
 		}
 
+		public void ConvertToString( ref Value val )
+		{
+			if( !ValToStr( ref val ) )
+				val = new Value();
+		}
+
 		private byte[] fmtBuf = new byte[32];
 
 		private void ExecuteUserCode()
