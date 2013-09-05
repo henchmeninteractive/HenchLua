@@ -461,5 +461,14 @@ namespace Henchmen.Lua.Tests
 
 			Assert.AreEqual( 100, n );
 		}
+
+		[TestMethod]
+		public void AddNumKey()
+		{
+			var ta = new Table( 6, 0 );
+
+			ta.Add( 1, Math.PI );
+			Assert.AreEqual( Math.PI, ta[1] );
+		}
 	}
 }

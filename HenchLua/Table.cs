@@ -285,7 +285,7 @@ namespace Henchmen.Lua
 				throw new ArgumentNullException( "Key is nil." );
 
 			var loc = FindValue( key );
-			if( loc != 0 )
+			if( loc < 0 || (loc > 0 && array[loc - 1].Val != null) )
 				throw new ArgumentException( "An element with that key already exists." );
 
 			loc = InsertNewKey( new CompactValue( key ) );
