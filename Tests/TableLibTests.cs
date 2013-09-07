@@ -18,6 +18,18 @@ namespace Henchmen.Lua.Tests
 			RunTestScript( "TableInsert2.lua", 42 );
 		}
 
+		[TestMethod]
+		public void Remove()
+		{
+			RunTestScript( "TableRemove.lua", 42 );
+		}
+
+		[TestMethod]
+		public void Remove2()
+		{
+			RunTestScript( "TableRemove2.lua", 42 );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			RunTestScriptWithGlobals( script, new Table(), expectedResults );
