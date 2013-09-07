@@ -2,23 +2,6 @@
 
 namespace Henchmen.Lua
 {
-	internal sealed class BoolBox
-	{
-		public readonly bool Value;
-		private BoolBox( bool value )
-		{
-			Value = value;
-		}
-
-		public static readonly BoolBox True = new BoolBox( true );
-		public static readonly BoolBox False = new BoolBox( false );
-
-		public override string ToString()
-		{
-			return Value.ToString();
-		}
-	}
-
 	internal sealed class NumBox
 	{
 		public double Value;

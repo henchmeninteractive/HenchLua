@@ -21,8 +21,6 @@ namespace Henchmen.Lua
 
 	public struct Value
 	{
-		public static readonly Value Nil;
-
 		internal object RefVal;
 		internal double NumVal;
 
@@ -31,12 +29,18 @@ namespace Henchmen.Lua
 		/// and NumVal == the numeric value.
 		/// </summary>
 		internal static readonly object NumTypeTag = new object();
+		
+		internal static readonly object TrueTag = new object();
+		internal static readonly object FalseTag = new object();
+
 		/// <summary>
 		/// Open upvalues (and these should only be seen in upvalue
 		/// arrays in closures!) are represented with RefVal == OpenUpValueTag
 		/// and NumVal == the stack index it points to.
 		/// </summary>
 		internal static readonly object OpenUpValueTag = new object();
+
+		public static readonly Value Nil;
 
 		public LValueType ValueType
 		{
@@ -45,8 +49,7 @@ namespace Henchmen.Lua
 				if( RefVal == null )
 					return LValueType.Nil;
 
-				if( RefVal == BoolBox.True ||
-					RefVal == BoolBox.False )
+				if( RefVal == TrueTag || RefVal == FalseTag )
 					return LValueType.Bool;
 
 				if( RefVal == NumTypeTag )
@@ -71,9 +74,9 @@ namespace Henchmen.Lua
 		public bool IsNil { get { return RefVal == null; } }
 		public bool IsNotNil { get { return RefVal != null; } }
 		
-		public bool IsBool { get { return RefVal == BoolBox.True || RefVal == BoolBox.False; } }
-		public bool IsTrue { get { return RefVal == BoolBox.True; } }
-		public bool IsFalse { get { return RefVal == BoolBox.False; } }
+		public bool IsBool { get { return RefVal == TrueTag || RefVal == FalseTag; } }
+		public bool IsTrue { get { return RefVal == TrueTag; } }
+		public bool IsFalse { get { return RefVal == FalseTag; } }
 		
 		public bool IsNumber { get { return RefVal == NumTypeTag; } }
 		
@@ -92,7 +95,7 @@ namespace Henchmen.Lua
 
 		public Value( bool value )
 		{
-			RefVal = value ? BoolBox.True : BoolBox.False;
+			RefVal = value ? TrueTag : FalseTag;
 			NumVal = 0;
 		}
 
@@ -204,7 +207,7 @@ namespace Henchmen.Lua
 
 		public void Set( bool value )
 		{
-			RefVal = value ? BoolBox.True : BoolBox.False;
+			RefVal = value ? TrueTag : FalseTag;
 		}
 
 		public void Set( int value )
@@ -323,7 +326,7 @@ namespace Henchmen.Lua
 		/// </summary>
 		public bool ToBool()
 		{
-			return RefVal != null && RefVal != BoolBox.False;
+			return RefVal != null && RefVal != FalseTag;
 		}
 
 		/// <summary>
@@ -400,8 +403,8 @@ namespace Henchmen.Lua
 		/// </summary>
 		public object ToUserData()
 		{
-			if( RefVal == null || RefVal == BoolBox.True ||
-				RefVal == BoolBox.False || RefVal == NumTypeTag )
+			if( RefVal == null || RefVal == TrueTag ||
+				RefVal == FalseTag || RefVal == NumTypeTag )
 				return null;
 
 			if( RefVal is byte[] || RefVal is Table ||
@@ -425,7 +428,7 @@ namespace Henchmen.Lua
 			var val = RefVal;
 
 			if( val == NumTypeTag ||
-			   	val == BoolBox.True || val == BoolBox.False ||
+			   	val == TrueTag || val == FalseTag ||
 			   	val is byte[] ||
 			   	Callable.IsCallable( val ) )
 				return null;
@@ -445,9 +448,9 @@ namespace Henchmen.Lua
 
 		public static explicit operator bool( Value value )
 		{
-			if( value.RefVal == BoolBox.True )
+			if( value.RefVal == TrueTag )
 				return true;
-			if( value.RefVal == BoolBox.False )
+			if( value.RefVal == FalseTag )
 				return false;
 
 			throw new InvalidCastException();
@@ -536,10 +539,10 @@ namespace Henchmen.Lua
 
 		public override int GetHashCode()
 		{
-			if( RefVal == null || RefVal == BoolBox.False )
+			if( RefVal == null || RefVal == FalseTag )
 				return 0;
 
-			if( RefVal == BoolBox.True )
+			if( RefVal == TrueTag )
 				return 1;
 
 			if( RefVal == NumTypeTag )
@@ -564,7 +567,7 @@ namespace Henchmen.Lua
 
 		public bool Equals( bool value )
 		{
-			return RefVal == (value ? BoolBox.True : BoolBox.False);
+			return RefVal == (value ? TrueTag : FalseTag);
 		}
 
 		public bool Equals( double value )
@@ -683,10 +686,10 @@ namespace Henchmen.Lua
 			if( RefVal == null )
 				return "(nil)";
 
-			if( RefVal == BoolBox.True )
+			if( RefVal == TrueTag )
 				return "true";
 
-			if( RefVal == BoolBox.False )
+			if( RefVal == FalseTag )
 				return "false";
 
 			if( RefVal == NumTypeTag )
@@ -868,10 +871,10 @@ namespace Henchmen.Lua
 
 		public override int GetHashCode()
 		{
-			if( Val == null || Val == BoolBox.False )
+			if( Val == null || Val == Value.FalseTag )
 				return 0;
 
-			if( Val == BoolBox.True )
+			if( Val == Value.TrueTag )
 				return 1;
 
 			var asNum = Val as NumBox;

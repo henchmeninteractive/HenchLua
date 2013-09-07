@@ -287,7 +287,7 @@ namespace Henchmen.Lua
 
 				case OpCode.LoadBool:
 					stack[stackBase + op.A].RefVal =
-						op.B != 0 ? BoolBox.True : BoolBox.False;
+						op.B != 0 ? Value.TrueTag : Value.FalseTag;
 					if( op.C != 0 )
 						pc++;
 					break;
@@ -462,8 +462,8 @@ namespace Henchmen.Lua
 							consts[ib & ~Instruction.BitK].RefVal :
 							stack[stackBase + ib].RefVal;
 
-						var res = b == null || b == BoolBox.False;
-						stack[stackBase + op.A].RefVal = res ? BoolBox.True : BoolBox.False;
+						var res = b == null || b == Value.FalseTag;
+						stack[stackBase + op.A].RefVal = res ? Value.TrueTag : Value.FalseTag;
 					}
 					break;
 
@@ -546,7 +546,7 @@ namespace Henchmen.Lua
 				case OpCode.Test:
 					{
 						var a = stack[stackBase + op.A].RefVal;
-						var test = a == null || a == BoolBox.False;
+						var test = a == null || a == Value.FalseTag;
 
 						if( (op.C != 0) == test )
 						{
@@ -564,7 +564,7 @@ namespace Henchmen.Lua
 				case OpCode.TestSet:
 					{
 						var b = stack[stackBase + op.B].RefVal;
-						var test = b == null || b == BoolBox.False;
+						var test = b == null || b == Value.FalseTag;
 
 						if( (op.C != 0) == test )
 						{
@@ -1174,7 +1174,7 @@ namespace Henchmen.Lua
 			if( asStr != null )
 				return LString.InternalEquals( asStr, b.RefVal as byte[] );
 
-			if( a.RefVal == BoolBox.True || a.RefVal == BoolBox.False )
+			if( a.RefVal == Value.TrueTag || a.RefVal == Value.FalseTag )
 				return b.RefVal == a.RefVal;
 
 			//and now we go into the full eq
