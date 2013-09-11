@@ -197,7 +197,7 @@ namespace Henchmen.Lua
 				ret.AppendFormat( " R{0}", A );
 
 				if( B == 0 )
-					ret.AppendFormat( "( R{0}... )", A - 1 );
+					ret.AppendFormat( "( R{0}... )", A + 1 );
 				else if( B == 1 )
 					ret.Append( "()" );
 				else if( B == 2 )
