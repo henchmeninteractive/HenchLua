@@ -41,7 +41,7 @@ namespace Henchmen.Lua.Tests
 					throw new InvalidDataException( Native.ToString( state, 1 ) ?? "Failed loading chunk for test." );
 
 				var ret = new MemoryStream();
-				Native.Dump( state, ret, false );
+				Native.Dump( state, ret );
 				ret.Position = 0;
 
 				return ret;

@@ -6,7 +6,7 @@
     <ProjectGuid>{FD1F7FD1-3AC7-43F8-9BD8-8AF048FE15A6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LuaSharp.Tests</RootNamespace>
+    <RootNamespace>Henchmen.Lua.Tests</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -60,6 +60,7 @@
     <Compile Include="ThreadTests.cs" />
     <Compile Include="MetaTableTestss.cs" />
     <Compile Include="TableLibTests.cs" />
+    <Compile Include="CoreTests.cs" />
     <Compile Include="ValueTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -238,14 +238,10 @@ internal static class Native
 	[DllImport( Dll, EntryPoint = "lua_dump", CallingConvention = CallingConvention.Cdecl )]
 	public static extern int Dump( IntPtr L, Writer writer, IntPtr baton );
 
-	[DllImport( Dll, EntryPoint = "luaC_dump", CallingConvention = CallingConvention.Cdecl )]
-	public static extern int Dump( IntPtr L, Writer writer, IntPtr baton,
-		[MarshalAs( UnmanagedType.Bool )] bool strip );
-
-	public static int Dump( IntPtr L, Stream dest, bool strip )
+	public static int Dump( IntPtr L, Stream dest )
 	{
 		var writer = new DumpWriter( dest );
-		return Dump( L, writer.Write, IntPtr.Zero, strip );
+		return Dump( L, writer.Write, IntPtr.Zero );
 	}
 
 	private class DumpWriter
@@ -271,7 +267,8 @@ internal static class Native
 					Marshal.Copy( data, buffer, 0, n );
 					
 					dest.Write( buffer, 0, n );
-					
+
+					data = (IntPtr)((long)data + n);
 					cb -= (ulong)n;
 				}
 
