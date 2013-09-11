@@ -15,12 +15,16 @@ namespace Henchmen.Lua.Libs
 		public static readonly LString Name_Remove = "remove";
 		public static readonly Callable Remove = (Callable)TRemove;
 
+		public static readonly LString Name_Unpack = "unpack";
+		public static readonly Callable Unpack = (Callable)TUnpack;
+
 		public static void SetTableMethods( Table globals )
 		{
 			globals[Name_Table] = new Table()
 			{
 				{ Name_Insert, Insert },
 				{ Name_Remove, Remove },
+				{ Name_Unpack, Unpack },
 			};
 		}
 
@@ -84,7 +88,27 @@ namespace Henchmen.Lua.Libs
 				t[i] = t[i + 1];
 			t[n] = new Value();
 
-			return l.SetStack( ret );
+			return l.SetReturnValues( ret );
+		}
+
+		private static int TUnpack( Thread l )
+		{
+			var t = (Table)l[1];
+
+			int min = l.StackTop >= 2 ? (int)l[2] : 1;
+			int max = l.StackTop >= 3 ? (int)l[3] : t.GetLen();
+
+			if( min > max )
+				//empty range
+				return 0;
+
+			int n = max - min + 1;
+
+			l.StackTop = n;
+			for( int i = 0; i < n; i++ )
+				l[i + 1] = t[min + i];
+
+			return n;
 		}
 	}
 }
