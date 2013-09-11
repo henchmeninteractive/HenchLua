@@ -58,7 +58,7 @@
     <Compile Include="TableTests.cs" />
     <Compile Include="ProtoTests.cs" />
     <Compile Include="ThreadTests.cs" />
-    <Compile Include="MetaTableTestss.cs" />
+    <Compile Include="MetaTableTests.cs" />
     <Compile Include="TableLibTests.cs" />
     <Compile Include="CoreTests.cs" />
     <Compile Include="ValueTests.cs" />

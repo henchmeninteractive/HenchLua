@@ -12,6 +12,12 @@ namespace Henchmen.Lua.Tests
 			RunTestScript( "math.lua" );
 		}
 
+		[TestMethod]
+		public void Goto()
+		{
+			RunTestScript( "goto.lua" );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			RunTestScriptWithGlobals( script, new Table(), expectedResults );

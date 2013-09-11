@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Henchmen.Lua.Tests
 {
 	[TestClass]
-	public class MetaTableTestss
+	public class MetaTableTests
 	{
 		[TestMethod]
 		public void SetMetaTable()
