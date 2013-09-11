@@ -28,7 +28,7 @@ namespace Henchmen.Lua.Libs
 			int n = (int)l[2];
 
 			if( n == 0 )
-				return l.SetStack( LString.Empty );
+				return l.SetReturnValues( LString.Empty );
 
 			if( n < 0 )
 				throw new ArgumentOutOfRangeException( "negative repeat count" );
@@ -36,7 +36,7 @@ namespace Henchmen.Lua.Libs
 			var sep = l.StackTop >= 3 ? (LString)l[3] : LString.Empty;
 
 			if( n == 1 )
-				return l.SetStack( str );
+				return l.SetReturnValues( str );
 
 			int strOfs, strLen, sepOfs, sepLen;
 			byte[] strBuf, sepBuf;
@@ -67,7 +67,7 @@ namespace Henchmen.Lua.Libs
 
 			Debug.Assert( retOfs + strLen == retBuf.Length );
 
-			return l.SetStack( LString.InternalFinishBuffer( retBuf ) );
+			return l.SetReturnValues( LString.InternalFinishBuffer( retBuf ) );
 		}
 	}
 }

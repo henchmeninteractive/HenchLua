@@ -319,7 +319,7 @@ namespace Henchmen.Lua.Tests
 
 				k = new LString( kstr );
 
-				return l.SetStack( t[k] );
+				return l.SetReturnValues( t[k] );
 			});
 
 			RunTestScriptWithGlobals( "DeepOpSelf.lua", globals, 42 );

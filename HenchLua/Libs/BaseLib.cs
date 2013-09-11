@@ -70,9 +70,9 @@ namespace Henchmen.Lua.Libs
 			Value val;
 
 			if( tbl.GetNext( ref key, out val ) )
-				return l.SetStack( key, val );
+				return l.SetReturnValues( key, val );
 			else
-				return l.SetStack( Value.Nil );
+				return l.SetNilReturnValue();
 		}
 
 		private static int BPairs( Thread l )
@@ -106,9 +106,9 @@ namespace Henchmen.Lua.Libs
 			Value val;
 
 			if( tbl.TryGetValue( key, out val ) )
-				return l.SetStack( key, val );
+				return l.SetReturnValues( key, val );
 			else
-				return l.SetStack( Value.Nil );
+				return l.SetNilReturnValue();
 		}
 
 		private static int BIPairs( Thread l )
@@ -121,13 +121,13 @@ namespace Henchmen.Lua.Libs
 			{
 				l.StackTop = 1;
 				l.Call( (Callable)mmt, 1, 3 );
+				
+				return 3;
 			}
 			else
 			{
-				l.SetStack( INext, val, 0 );
+				return l.SetReturnValues( INext, val, 0 );
 			}
-
-			return 3;
 		}
 
 		private static int BGetMetatable( Thread l )
@@ -146,10 +146,10 @@ namespace Henchmen.Lua.Libs
 			}
 			else
 			{
-				vmt = Value.Nil;
+				vmt = new Value();
 			}
 
-			return l.SetStack( vmt );
+			return l.SetReturnValues( vmt );
 		}
 
 		private static Table GetMetatableImp( Value value )
@@ -198,7 +198,7 @@ namespace Henchmen.Lua.Libs
 			var nval = l[1];
 			
 			if( nval.ValueType == LValueType.Number )
-				return l.SetStack( nval );
+				return l.SetReturnValues( nval );
 
 			var nstr = nval.ToLString();
 			if( nstr.IsNil )
@@ -226,7 +226,7 @@ namespace Henchmen.Lua.Libs
 					return l.SetNilReturnValue();
 			}
 
-			return l.SetStack( num );
+			return l.SetReturnValues( num );
 		}
 
 		private static int BSelect( Thread l )
@@ -234,7 +234,7 @@ namespace Henchmen.Lua.Libs
 			var selector = l[1];
 
 			if( selector == Literals.Symbol_Hash )
-				return l.SetStack( l.StackTop - 1 );
+				return l.SetReturnValues( l.StackTop - 1 );
 
 			var sel = (int)selector;
 			var top = l.StackTop;

@@ -217,6 +217,16 @@ namespace Henchmen.Lua
 			return 2;
 		}
 
+		public int SetReturnValues( Value v0, Value v1, Value v2 )
+		{
+			StackTop = 3;
+			stack[call.StackBase + 0] = v0;
+			stack[call.StackBase + 1] = v1;
+			stack[call.StackBase + 2] = v2;
+
+			return 3;
+		}
+
 		public Value[] GetStackElements( int index0, int index1 )
 		{
 			if( index0 <= 0 || index1 <= 0 )
