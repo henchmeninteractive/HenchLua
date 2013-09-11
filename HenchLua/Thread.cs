@@ -109,6 +109,14 @@ namespace Henchmen.Lua
 
 			stackTop = stackTop + 1;
 		}
+
+		public void Remove( int index )
+		{
+			index = RealIndex( index );
+
+			Array.Copy( stack, index + 1, stack, index, stackTop - index );
+			stack[--stackTop].RefVal = null;
+		}
 			
 		public void Pop()
 		{
@@ -117,6 +125,8 @@ namespace Henchmen.Lua
 				throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
 
 			stackTop = newTop;
+
+			stack[newTop + 1].RefVal = null;
 		}
 			
 		public void Pop( int count )
@@ -129,6 +139,9 @@ namespace Henchmen.Lua
 			int newTop = stackTop - count;
 			if( newTop < call.StackBase )
 				throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
+
+			for( int i = newTop + 1; i <= StackTop; i++ )
+				stack[i].RefVal = null;
 
 			stackTop = newTop;
 		}
@@ -172,6 +185,36 @@ namespace Henchmen.Lua
 			stack[call.StackBase + 3] = v3;
 
 			return 4;
+		}
+
+		//like SetStack, however these may later be optimized
+		//to return directly to the caller's stack - these must
+		//only be called by callbacks which immediately return
+		//the value returned by this function (which may or may
+		//not be the number of results set!)
+
+		public int SetNilReturnValue()
+		{
+			StackTop = 1;
+			stack[call.StackBase + 0].RefVal = null;
+			return 1;
+		}
+
+		public int SetReturnValues( Value v0 )
+		{
+			StackTop = 1;
+			stack[call.StackBase + 0] = v0;
+
+			return 1;
+		}
+
+		public int SetReturnValues( Value v0, Value v1 )
+		{
+			StackTop = 2;
+			stack[call.StackBase + 0] = v0;
+			stack[call.StackBase + 1] = v1;
+
+			return 2;
 		}
 
 		public Value[] GetStackElements( int index0, int index1 )
@@ -430,8 +473,8 @@ namespace Henchmen.Lua
 						}
 						else
 						{
-							DoArith( Literals.TagMethodNames[(int)TagMethods.Add + (opCode - OpCode.Add)],
-								b.RefVal, c.RefVal, out stack[stackBase + op.A] );
+							DoArith( TagMethods.Add + (opCode - OpCode.Add),
+								b, c, out stack[stackBase + op.A] );
 						}
 					}
 					break;
@@ -449,7 +492,7 @@ namespace Henchmen.Lua
 						}
 						else
 						{
-							DoArith( Literals.TagMethod_Unm, b.RefVal, b.RefVal,
+							DoArith( TagMethods.Unm, b, b,
 								out stack[stackBase + op.A] );
 						}
 					}
@@ -1160,11 +1203,48 @@ namespace Henchmen.Lua
 			if( val.RefVal == Value.NumTypeTag )
 				return true;
 
+			var asStr = val.RefVal as byte[];
+			if( asStr != null )
+			{
+				if( Helpers.StrToNum( asStr, LString.BufferDataOffset,
+					asStr.Length - LString.BufferDataOffset, out val.NumVal ) )
+				{
+					val.RefVal = Value.NumTypeTag;
+					return true;
+				}
+			}
+
 			return false;
 		}
 
-		private void DoArith( LString opName, object a, object b, out Value ret )
+		private void DoArith( TagMethods opCode, Value a, Value b, out Value ret )
 		{
+			if( ToNumber( ref a ) && (opCode == TagMethods.Unm || ToNumber( ref b ) ) )
+			{
+				double na = a.NumVal, nb = b.NumVal, rv;
+
+				switch( opCode )
+				{
+				case TagMethods.Add: rv = na + nb; break;
+				case TagMethods.Sub: rv = na - nb; break;
+				case TagMethods.Mul: rv = na * nb; break;
+				case TagMethods.Div: rv = na / nb; break;
+				case TagMethods.Mod: rv = na % nb; break;
+				case TagMethods.Pow: rv = Math.Pow( na, nb ); break;
+
+				case TagMethods.Unm: rv = -na; break;
+
+				default: Debug.Assert( false ); rv = 0; break;
+				}
+
+				ret.RefVal = Value.NumTypeTag;
+				ret.NumVal = rv;
+
+				return;
+			}
+
+			var opName = Literals.TagMethodNames[(int)opCode];
+
 			throw new NotImplementedException();
 		}
 
@@ -1201,11 +1281,37 @@ namespace Henchmen.Lua
 
 		private bool Less( ref Value a, ref Value b )
 		{
+			var asStrA = a.RefVal as byte[];
+			var asStrB = b.RefVal as byte[];
+
+			if( asStrA != null && asStrB != null )
+			{
+				//here we break from standard Lua - we
+				//do a culture-insensitive comparison
+				//where it does not (culture-sensitive
+				//sorting would generate garbage)
+
+				return LString.InternalCompareOrdinal( asStrA, asStrB ) < 0;
+			}
+
 			throw new NotImplementedException();
 		}
 
 		private bool LessEqual( ref Value a, ref Value b )
 		{
+			var asStrA = a.RefVal as byte[];
+			var asStrB = b.RefVal as byte[];
+
+			if( asStrA != null && asStrB != null )
+			{
+				//here we break from standard Lua - we
+				//do a culture-insensitive comparison
+				//where it does not (culture-sensitive
+				//sorting would generate garbage)
+
+				return LString.InternalCompareOrdinal( asStrA, asStrB ) <= 0;
+			}
+
 			throw new NotImplementedException();
 		}
 
@@ -1289,7 +1395,8 @@ namespace Henchmen.Lua
 			}
 
 			Debug.Assert( numOpenUpValues == 0 ||
-				openUpValues[idx].StackIndex <= rec.StackIndex );
+				(idx == 0 || openUpValues[idx - 1].StackIndex <= rec.StackIndex) &&
+				(idx == numOpenUpValues || openUpValues[idx].StackIndex >= rec.StackIndex) );
 
 			if( idx < numOpenUpValues )
 				Array.Copy( openUpValues, idx, openUpValues, idx + 1, numOpenUpValues - idx );

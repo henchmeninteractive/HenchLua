@@ -40,6 +40,7 @@
     <Compile Include="Function.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Instruction.cs" />
+    <Compile Include="Libs\StringLib.cs" />
     <Compile Include="Libs\TableLib.cs" />
     <Compile Include="Literals.cs" />
     <Compile Include="Libs\MathLib.cs" />

@@ -16,13 +16,19 @@ namespace Henchmen.Lua.Libs
 		public static readonly Callable Pairs = (Callable)BPairs;
 		public static readonly LString Name_Next = "next";
 		public static readonly Callable Next = (Callable)BNext;
-		
+
 		public static readonly LString Name_IPairs = "ipairs";
 		public static readonly Callable IPairs = (Callable)BIPairs;
 		public static readonly Callable INext = (Callable)BINext;
 
-		public static readonly LString Name_BType = "type";
+		public static readonly LString Name_Type = "type";
 		public static readonly Callable Type = (Callable)BType;
+
+		public static readonly LString Name_ToNumber = "tonumber";
+		public static readonly Callable ToNumber = (Callable)BToNumber;
+
+		public static readonly LString Name_Select = "select";
+		public static readonly Callable Select = (Callable)BSelect;
 
 		public static void SetBaseMethods( Table globals )
 		{
@@ -33,7 +39,11 @@ namespace Henchmen.Lua.Libs
 			globals[Name_GetMetatable] = GetMetatable;
 			globals[Name_SetMetatable] = SetMetatable;
 
-			globals[Name_BType] = Type;
+			globals[Name_ToNumber] = ToNumber;
+
+			globals[Name_Type] = Type;
+
+			globals[Name_Select] = Select;
 		}
 
 		private static int BType( Thread l )
@@ -123,7 +133,7 @@ namespace Henchmen.Lua.Libs
 		private static int BGetMetatable( Thread l )
 		{
 			var mt = GetMetatableImp( l[1] );
-			
+
 			Value vmt;
 
 			if( mt != null )
@@ -181,6 +191,63 @@ namespace Henchmen.Lua.Libs
 			}
 
 			throw new ArgumentException( "Expected a table value." );
+		}
+
+		private static int BToNumber( Thread l )
+		{
+			var nval = l[1];
+			
+			if( nval.ValueType == LValueType.Number )
+				return l.SetStack( nval );
+
+			var nstr = nval.ToLString();
+			if( nstr.IsNil )
+				return l.SetNilReturnValue();
+			
+			byte[] nbuf;
+			int nIndex, nCount;
+
+			nstr.UnsafeGetDataBuffer( out nbuf, out nIndex, out nCount );
+
+			double num;
+
+			if( l.StackTop < 2 )
+			{
+				if( !Helpers.StrToNum( nbuf, nIndex, nCount, out num ) )
+					return l.SetNilReturnValue();
+			}
+			else
+			{
+				int radix = (int)l[2];
+				if( radix < 2 || radix > 36 )
+					throw new ArgumentOutOfRangeException( "base out of range" );
+
+				if( !Helpers.StrToInt( nbuf, nIndex, nCount, out num, radix ) )
+					return l.SetNilReturnValue();
+			}
+
+			return l.SetStack( num );
+		}
+
+		private static int BSelect( Thread l )
+		{
+			var selector = l[1];
+
+			if( selector == Literals.Symbol_Hash )
+				return l.SetStack( l.StackTop - 1 );
+
+			var sel = (int)selector;
+			var top = l.StackTop;
+
+			if( sel < 0 )
+				sel = top + sel;
+			else if( sel > top )
+				sel = top;
+
+			if( sel <= 1 )
+				throw new ArgumentOutOfRangeException( "index", "index out of range" );
+
+			return top - sel;						
 		}
 	}
 }

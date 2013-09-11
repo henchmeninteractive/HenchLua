@@ -222,6 +222,32 @@ namespace Henchmen.Lua
 			return true;
 		}
 
+		internal static int InternalCompareOrdinal( byte[] a, byte[] b )
+		{
+			if( a == b )
+				return 0;
+
+			if( a == null )
+				return b == null ? 0 : -1;
+			else if( b == null )
+				return 1;
+
+			int i;
+			for( i = BufferDataOffset; i < a.Length && i < b.Length; i++ )
+			{
+				int cmp = (int)a[i] - b[i];
+				if( cmp != 0 )
+					return cmp;
+			}
+
+			if( i < a.Length )
+				return 1;
+			if( i < b.Length )
+				return -1;
+			
+			return 0;
+		}
+
 		/// <summary>
 		/// Compares this string to another for equality.
 		/// </summary>

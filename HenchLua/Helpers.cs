@@ -169,5 +169,242 @@ namespace Henchmen.Lua
 				buf[i] = (byte)s[i];
 			return s.Length;
 		}
+
+		public static bool StrToNum( byte[] str, int index, int count, out double num )
+		{
+			int endIndex = index + count;
+
+			SkipSpace( str, ref index, endIndex );
+
+			int sign = ReadSign( str, ref index, endIndex );
+			if( sign == 0 )
+			{
+				num = 0;
+				return false;
+			}
+
+			int radix;
+			byte expChar;
+
+			if( endIndex - index > 2 && str[index] == '0' && Lower( str[index + 1] ) == 'x' )
+			{
+				index += 2;
+				radix = 16;
+
+				expChar = (byte)'p';
+			}
+			else
+			{
+				radix = 10;
+				expChar = (byte)'e';
+			}
+
+			var val = StrToNum( str, ref index, endIndex, radix, true, expChar );
+			if( !val.HasValue )
+			{
+				num = 0;
+				return false;
+			}
+
+			SkipSpace( str, ref index, endIndex );
+
+			if( index != endIndex )
+			{
+				num = 0;
+				return false;
+			}
+
+			num = val.GetValueOrDefault() * sign;
+			return true;
+		}
+
+		public static bool StrToInt( byte[] str, int index, int count, out double num, int radix = 10 )
+		{
+			int endIndex = index + count;
+
+			SkipSpace( str, ref index, endIndex );
+
+			int sign = ReadSign( str, ref index, endIndex );
+			if( sign == 0 )
+			{
+				num = 0;
+				return false;
+			}
+			
+			var val = StrToNum( str, ref index, endIndex, radix, false, null );
+			if( !val.HasValue )
+			{
+				num = 0;
+				return false;
+			}
+
+			SkipSpace( str, ref index, endIndex );
+
+			if( index != endIndex )
+			{
+				num = 0;
+				return false;
+			}
+
+			num = val.GetValueOrDefault() * sign;
+			return true;
+		}
+
+		private static double? StrToNum( byte[] str, ref int index, int endIndex,
+			int radix, bool allowDecimal, byte? expCharLwr )
+		{
+			int wholeLen;
+			var wholePart = ReadDigits( str, ref index, endIndex, radix, out wholeLen );
+			if( wholePart < 0 )
+				return null;
+
+			int decLen = 0;
+			double decPart = -1;
+
+			if( allowDecimal && index < endIndex && str[index] == '.' )
+			{
+				index++;
+
+				decPart = ReadDigits( str, ref index, endIndex, radix, out decLen );
+
+				if( decPart < 0 )
+					return null;
+			}
+
+			if( wholeLen == 0 && decLen == 0 )
+				//must have at least one of the two
+				return null;
+
+			double expPart = 0;
+
+			if( expCharLwr.HasValue && index < endIndex &&
+				Lower( str[index] ) == expCharLwr )
+			{
+				if( decPart != -1 && decLen == 0 )
+					//if we have a decimal, we need digits before the exp
+					return null;
+
+				index++;
+
+				var expSign = ReadSign( str, ref index, endIndex );
+
+				int expLen;
+				expPart = ReadDigits( str, ref index, endIndex, 10, out expLen );
+				
+				if( expPart < 0 || expLen == 0 )
+					//have to have exp digits
+					return null;
+
+				expPart *= expSign;
+			}
+
+			double num = wholePart;
+
+			if( decLen > 0 )
+			{
+				for( int c = decLen; c-- != 0; )
+					num *= radix;
+				num += decPart;
+
+				if( radix == 16 )
+					//foolishness, we have a base-2 exponent
+					decLen *= 4;
+
+				expPart -= decLen;
+			}
+
+			if( expPart != 0 )
+			{
+				var expBase = radix != 16 ? radix : 2;
+				double exp = Math.Pow( expBase, Math.Abs( expPart ) );
+
+				if( expPart > 0 )
+					num *= exp;
+				else
+					num /= exp;
+			}
+
+			return num;
+		}
+
+		private static void SkipSpace( byte[] str, ref int index, int endIndex )
+		{
+			while( index < endIndex && IsSpace( str[index] ) )
+				index++;
+		}
+
+		private static int ReadSign( byte[] str, ref int index, int endIndex, bool allowPlus = true )
+		{
+			if( index == endIndex )
+				return 0;
+
+			if( str[index] == '-' )
+			{
+				index++;
+				return -1;
+			}
+
+			if( allowPlus && str[index] == '+' )
+				index++;
+
+			return 1;
+		}
+
+		private static double ReadDigits( byte[] str, ref int index, int endIndex, int radix, out int length )
+		{
+			double ret = 0;
+
+			for( length = 0; index < endIndex; index++, length++ )
+			{
+				int digit = ParseDigit( str[index], radix );
+				if( digit == -1 )
+					break;
+
+				ret = (ret * radix) + digit;
+			}
+
+			return ret;
+		}
+
+		private static int ParseDigit( byte ch, int radix )
+		{
+			int ret;
+
+			if( ch >= '0' && ch <= '9' )
+				ret = ch - '0';
+			else if( ch >= 'a' && ch <= 'z' )
+				ret = 10 + ch - 'a';
+			else if( ch >= 'A' && ch <= 'Z' )
+				ret = 10 + ch - 'A';
+			else
+				ret = -1;
+
+			return ret < radix ? ret : -1;
+		}
+
+		private static bool IsSpace( byte ch )
+		{
+			switch( (char)ch )
+			{
+			case ' ':
+			case '\f':
+			case '\n':
+			case '\r':
+			case '\t':
+			case '\v':
+				return true;
+
+			default:
+				return false;
+			}
+		}
+
+		private static byte Lower( byte ch )
+		{
+			if( ch >= 'A' && ch <= 'Z' )
+				ch = (byte)(ch - 'A' + 'a');
+
+			return ch;
+		}
 	}
 }
