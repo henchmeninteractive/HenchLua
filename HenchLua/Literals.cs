@@ -81,6 +81,10 @@
 		public static readonly LString Symbol_Hash = "#";
 		public static readonly LString Symbol_Plus = "+";
 		public static readonly LString Symbol_Minus = "-";
+
+		public static readonly LString Nil = TypeName_Nil;
+		public static readonly LString True = "true";
+		public static readonly LString False = "false";
 	}
 
 	internal enum TagMethods

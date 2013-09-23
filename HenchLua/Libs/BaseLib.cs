@@ -26,9 +26,18 @@ namespace Henchmen.Lua.Libs
 
 		public static readonly LString Name_ToNumber = "tonumber";
 		public static readonly Callable ToNumber = (Callable)BToNumber;
+		public static readonly LString Name_ToString = "tostring";
+		public static new readonly Callable ToString = (Callable)BToString;
 
 		public static readonly LString Name_Select = "select";
 		public static readonly Callable Select = (Callable)BSelect;
+
+		public static readonly LString Name_Print = "print";
+		public static readonly Callable Print = (Callable)BPrint;
+
+		public static readonly LString Name_CollectGarbage = "collectgarbage";
+		public static readonly Callable CollectGarbage_Nop = (Callable)BCollectGarbage_Nop;
+		public static readonly Callable CollectGarbage_Gc = (Callable)BCollectGarbage_Gc;
 
 		public static void SetBaseMethods( Table globals )
 		{
@@ -39,11 +48,25 @@ namespace Henchmen.Lua.Libs
 			globals[Name_GetMetatable] = GetMetatable;
 			globals[Name_SetMetatable] = SetMetatable;
 
+			globals[Name_ToString] = ToString;
 			globals[Name_ToNumber] = ToNumber;
+
+			globals[Name_Print] = Print;
 
 			globals[Name_Type] = Type;
 
 			globals[Name_Select] = Select;
+
+			globals[Name_CollectGarbage] = CollectGarbage_Nop;
+		}
+
+		/// <summary>
+		/// Replaces the default (nop) GC handler with one that
+		/// calls into the .NET GC to do partial or full collections.
+		/// </summary>
+		public static void SetRealCollectGarbageHandler( Table globals )
+		{
+			globals[Name_CollectGarbage] = CollectGarbage_Gc;
 		}
 
 		private static int BType( Thread l )
@@ -229,6 +252,59 @@ namespace Henchmen.Lua.Libs
 			return l.SetReturnValues( num );
 		}
 
+		private static int BToString( Thread l )
+		{
+			var ret = ToStringCore( l[1], l );
+			return l.SetReturnValues( ret );
+		}
+
+		private static LString ToStringCore( Value v, Thread l )
+		{
+			LString ret;
+
+			switch( v.ValueType )
+			{
+			case LValueType.Nil:
+				ret = Literals.Nil;
+				break;
+
+			case LValueType.Bool:
+				ret = v.IsTrue ? Literals.True : Literals.False;
+				break;
+
+			case LValueType.Number:
+				l.ConvertToString( ref v );
+				goto case LValueType.String;
+
+			case LValueType.String:
+				ret = (LString)v;
+				break;
+
+			default:
+				ret = new LString( v.ToString() );
+				break;
+			}
+
+			return ret;
+		}
+
+		private static int BPrint( Thread l )
+		{
+			for( int i = 1; i <= l.StackTop; i++ )
+			{
+				var str = ToStringCore( l[i], l );
+
+				if( i > 1 )
+					Console.Write( "\t" );
+
+				Console.Write( str.ToString() );
+			}
+
+			Console.WriteLine();
+
+			return 0;
+		}
+
 		private static int BSelect( Thread l )
 		{
 			var selector = l[1];
@@ -248,6 +324,72 @@ namespace Henchmen.Lua.Libs
 				throw new ArgumentOutOfRangeException( "index", "index out of range" );
 
 			return top - sel;						
+		}
+
+		private enum GcOpt
+		{
+			Stop,
+			Restart,
+			Collect,
+			Count,
+			Step,
+			SetPause,
+			SetStepMul,
+			SetMajorInc,
+			IsRunning,
+			Generational,
+			Incremental,
+		}
+
+		private static readonly LString[] GcOptNames = new LString[]
+		{
+			"stop",
+			"restart",
+			"collect",
+			"count",
+			"step",
+			"setpause",
+			"setstepmul",
+			"setmajorinc",
+			"isrunning",
+			"generational",
+			"incremental"
+		};
+
+		private static int BCollectGarbage_Nop( Thread l )
+		{
+			switch( (GcOpt)Helpers.CheckOpt( l[1], (int)GcOpt.Collect, GcOptNames ) )
+			{
+			case GcOpt.Count:
+				return l.SetReturnValues( 0, 0 );
+
+			default:
+				break;
+			}
+
+			return l.SetReturnValues( 0 );
+		}
+
+		private static int BCollectGarbage_Gc( Thread l )
+		{
+			switch( (GcOpt)Helpers.CheckOpt( l[1], (int)GcOpt.Collect, GcOptNames ) )
+			{
+			case GcOpt.Collect:
+				GC.Collect();
+				break;
+
+			case GcOpt.Step:
+				GC.Collect( 0 );
+				break;
+
+			case GcOpt.Count:
+				return l.SetReturnValues( 0, 0 );
+
+			default:
+				break;				
+			}
+
+			return l.SetReturnValues( 0 );
 		}
 	}
 }

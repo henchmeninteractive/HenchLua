@@ -312,6 +312,9 @@ namespace Henchmen.Lua
 			if( encoding == null )
 				throw new ArgumentNullException( "encoding" );
 
+			if( InternalData == null )
+				return "(nil)";
+
 			return encoding.GetString( InternalData, 4, InternalData.Length - 4 );
 		}
 

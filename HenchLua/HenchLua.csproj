@@ -35,6 +35,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InternalHelpers.cs" />
     <Compile Include="Libs\BaseLib.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="Function.cs" />

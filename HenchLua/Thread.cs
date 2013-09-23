@@ -81,9 +81,42 @@ namespace Henchmen.Lua
 			return index;
 		}
 
+		/// <summary>
+		/// Gets or sets a value on the stack.
+		/// </summary>
+		/// <param name="index">
+		/// The index to get or set. Positive indexes refer to elements
+		/// from the bottom of the stack up (so index 1 is the lowest element
+		/// on the stack). Negative indices refer to elements from the
+		/// top of the stack down (so -1 is the top element on the stack).
+		/// Zero is always an invalid index.
+		/// </param>
+		/// <remarks>
+		/// If you attempt to read beyond the top or bottom of the stack,
+		/// you'll get 
+		/// </remarks>
 		public Value this[int index]
 		{
-			get { return stack[RealIndex( index )]; }
+			get
+			{
+				if( index == 0 )
+					throw new ArgumentOutOfRangeException( "index" );
+
+				if( index < 0 )
+				{
+					index = stackTop + index;
+					if( index < call.StackBase )
+						return new Value();
+				}
+				else
+				{
+					index = call.StackBase + index - 1;
+					if( index >= stackTop )
+						return new Value();
+				}
+
+				return stack[index];
+			}
 			set { stack[RealIndex( index )] = value; }
 		}
 
