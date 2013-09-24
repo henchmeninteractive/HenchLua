@@ -431,7 +431,7 @@ namespace Henchmen.Lua
 						Value upVal;
 						ReadUpValue( ref upValues[op.A], out upVal );
 
-						SetTable( upVal.RefVal, ref key, ref value );
+						SetTable( upVal, ref key, ref value );
 					}
 					break;
 
@@ -451,7 +451,7 @@ namespace Henchmen.Lua
 							consts[c & ~Instruction.BitK] :
 							stack[stackBase + c];
 
-						SetTable( stack[stackBase + op.A].RefVal,
+						SetTable( stack[stackBase + op.A],
 							ref key, ref value );
 					}
 					break;
@@ -1144,11 +1144,34 @@ namespace Henchmen.Lua
 			stackTop = saveTop;
 		}
 
+		private void CallMetaMethod2( object metaMethod, ref Value arg0, ref Value arg1, ref Value arg2 )
+		{
+			int saveTop = stackTop;
+
+			int stackBase = call.StackTop != -1 ? call.StackTop : stackTop;
+			CheckStack( stackBase + 4 );
+
+			stack[stackBase].RefVal = metaMethod;
+			stack[stackBase + 1] = arg0;
+			stack[stackBase + 2] = arg1;
+			stack[stackBase + 3] = arg2;
+
+			BeginCall( stackBase, 3, 0 );
+
+			Execute();
+
+			EndCall();
+
+			stackTop = saveTop;
+		}
+
+		private const int MaxMtLoop = 100;
+
 		private Value GetTable( Value obj, ref Value key )
 		{
 			Value ret;
 
-			for( int i = 0; i < 100; i++ )
+			for( int i = 0; i < MaxMtLoop; i++ )
 			{
 				Table metaTable;
 
@@ -1208,18 +1231,61 @@ namespace Henchmen.Lua
 			stack[retStkIdx] = val;
 		}
 
-		private void SetTable( object obj, ref Value key, ref Value value )
+		/// <summary>
+		/// Performs a full table get, invoking the __index
+		/// metamethod if appropriate.
+		/// </summary>
+		public Value GetTable( IHasMetatable table, Value key )
 		{
-			//ToDo: this should be a full set
+			if( table == null )
+				throw new ArgumentNullException( "table" );
 
-			var table = obj as Table;
+			Value tVal;
+			tVal.RefVal = table;
+			tVal.NumVal = 0;
 
-			int loc = table.FindValue( key );
+			return GetTable( tVal, ref key );
+		}
 
-			if( loc == 0 )
-				loc = table.InsertNewKey( new CompactValue( key ) );
+		private void SetTable( Value obj, ref Value key, ref Value value )
+		{
+			for( int i = 0; i < MaxMtLoop; i++ )
+			{
+				var newIndex = new Value();
 
-			table.WriteValue( loc, ref value );
+				var asTable = obj.RefVal as Table;
+				if( asTable != null )
+				{
+					int loc = asTable.FindValue( key );
+					if( asTable.IsLocNilOrEmpty( loc ) )
+						newIndex = GetMetamethod( ref obj, Literals.TagMethod_NewIndex );
+
+					if( newIndex.RefVal == null )
+					{
+						if( loc == 0 )
+							loc = asTable.InsertNewKey( new CompactValue( key ) );
+
+						asTable.WriteValue( loc, ref value );
+						
+						return;
+					}
+				}
+				else
+				{
+					newIndex = GetMetamethod( ref obj, Literals.TagMethod_NewIndex );
+
+					if( newIndex.RefVal == null )
+						throw new InvalidOperandException( "Can't index the given value." );
+				}
+
+				if( Callable.IsCallable( newIndex.RefVal ) )
+				{
+					CallMetaMethod2( newIndex.RefVal, ref obj, ref key, ref value );
+					return;
+				}
+
+				obj = newIndex;
+			}
 		}
 
 		private Table GetMetatable( ref Value val )

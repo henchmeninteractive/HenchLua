@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Henchmen.Lua
 {
-	public class Table : IEnumerable<KeyValuePair<Value, Value>>
+	public class Table : IHasMetatable, IEnumerable<KeyValuePair<Value, Value>>
 	{
 		public Table()
 		{

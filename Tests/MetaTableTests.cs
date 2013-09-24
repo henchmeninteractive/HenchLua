@@ -24,6 +24,18 @@ namespace Henchmen.Lua.Tests
 			RunTestScript( "Index2.lua", 42 );
 		}
 
+		[TestMethod]
+		public void NewIndex()
+		{
+			RunTestScript( "NewIndex.lua", 42 );
+		}
+
+		[TestMethod]
+		public void NewIndex2()
+		{
+			RunTestScript( "NewIndex2.lua", 42 );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			var thread = new Thread();
