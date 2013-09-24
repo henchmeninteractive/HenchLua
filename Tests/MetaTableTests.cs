@@ -25,6 +25,12 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void Index3()
+		{
+			RunTestScript( "Index3.lua", 42 );
+		}
+
+		[TestMethod]
 		public void NewIndex()
 		{
 			RunTestScript( "NewIndex.lua", 42 );
