@@ -1288,6 +1288,18 @@ namespace Henchmen.Lua
 			}
 		}
 
+		public void SetTable( IHasMetatable table, Value key, Value value )
+		{
+			if( table == null )
+				throw new ArgumentNullException( "table" );
+			
+			Value tVal;
+			tVal.RefVal = table;
+			tVal.NumVal = 0;
+
+			SetTable( tVal, ref key, ref value );
+		}
+
 		private Table GetMetatable( ref Value val )
 		{
 			var asTable = val.RefVal as Table;
