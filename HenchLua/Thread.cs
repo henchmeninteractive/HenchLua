@@ -159,7 +159,7 @@ namespace Henchmen.Lua
 
 			stackTop = newTop;
 
-			stack[newTop + 1].RefVal = null;
+			stack[newTop].RefVal = null;
 		}
 			
 		public void Pop( int count )
@@ -173,10 +173,25 @@ namespace Henchmen.Lua
 			if( newTop < call.StackBase )
 				throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
 
-			for( int i = newTop + 1; i <= StackTop; i++ )
+			for( int i = newTop; i < stackTop; i++ )
 				stack[i].RefVal = null;
 
 			stackTop = newTop;
+		}
+
+		public Value PopValue()
+		{
+			int newTop = stackTop - 1;
+			if( newTop < call.StackBase )
+				throw new InvalidOperationException( "Can't pop more values than exist on the current frame." );
+
+			stackTop = newTop;
+
+			var ret = stack[newTop];
+
+			stack[newTop].RefVal = null;
+
+			return ret;
 		}
 
 		//helpers to make it easy to set up the stack for a return

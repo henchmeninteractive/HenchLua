@@ -14,6 +14,20 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void PushPop()
+		{
+			var thread = new Thread();
+
+			Assert.AreEqual( 0, thread.StackTop );
+
+			thread.Push( Math.PI );
+			Assert.AreEqual( 1, thread.StackTop );
+
+			Assert.AreEqual( Math.PI, thread.PopValue() );
+			Assert.AreEqual( 0, thread.StackTop );
+		}
+
+		[TestMethod]
 		public void MathChunk()
 		{
 			RunTestScript( "MathChunk.lua", 42 );
