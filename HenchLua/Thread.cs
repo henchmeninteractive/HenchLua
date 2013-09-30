@@ -130,6 +130,42 @@ namespace Henchmen.Lua
 			stackTop = stackTop + 1;
 		}
 
+		public void Push( Value value0, Value value1 )
+		{
+			if( stackTop == stack.Length )
+				throw new InvalidOperationException( "Lua stack overflow." );
+
+			stack[stackTop + 0] = value0;
+			stack[stackTop + 1] = value1;
+
+			stackTop = stackTop + 2;
+		}
+
+		public void Push( Value value0, Value value1, Value value2 )
+		{
+			if( stackTop == stack.Length )
+				throw new InvalidOperationException( "Lua stack overflow." );
+
+			stack[stackTop + 0] = value0;
+			stack[stackTop + 1] = value1;
+			stack[stackTop + 2] = value2;
+
+			stackTop = stackTop + 3;
+		}
+
+		public void Push( Value value0, Value value1, Value value2, Value value3 )
+		{
+			if( stackTop == stack.Length )
+				throw new InvalidOperationException( "Lua stack overflow." );
+
+			stack[stackTop + 0] = value0;
+			stack[stackTop + 1] = value1;
+			stack[stackTop + 2] = value2;
+			stack[stackTop + 3] = value3;
+
+			stackTop = stackTop + 4;
+		}
+
 		public void Insert( int index, Value value )
 		{
 			if( stackTop == stack.Length )
