@@ -152,6 +152,65 @@ namespace Henchmen.Lua
 		}
 
 		/// <summary>
+		/// Allocates a data buffer for a string of a given length.
+		/// </summary>
+		/// <param name="length">
+		/// The length of the buffer to allocate.
+		/// </param>
+		/// <param name="offset">
+		/// The offset in the returned buffer to write your data at.
+		/// Do not write data before this position or after <c>offset + length</c>.
+		/// </param>
+		/// <returns>
+		/// A buffer to load with string data.
+		/// </returns>
+		public static byte[] AllocBuffer( int length, out int offset )
+		{
+			if( length < 0 )
+				throw new ArgumentOutOfRangeException( "length" );
+
+			var ret = InternalAllocBuffer( length );
+
+			//fill the hash bytes with sentinel values
+			ret[0] = (byte)'H';
+			ret[1] = (byte)'L';
+			ret[2] = (byte)'U';
+			ret[3] = (byte)'A';
+
+			offset = BufferDataOffset;
+			return ret;
+		}
+
+		/// <summary>
+		/// Finishes construction of a string from a preallocated buffer.
+		/// </summary>
+		/// <returns>
+		/// The new string.
+		/// </returns>
+		/// <param name="buffer">
+		/// The buffer value returned by <see cref="AllocBuffer"/>.
+		/// </param>
+		/// <remarks>
+		/// The buffer must be fully initialized before this function is called.
+		/// The buffer must be treated as read-only after this call. Modifying it
+		/// will have unpredictable results.
+		/// </remarks>
+		public static LString FinishBuffer( byte[] buffer )
+		{
+			if( buffer == null )
+				throw new ArgumentNullException( "buffer" );
+
+			if( buffer.Length < 4 ||
+			   	buffer[0] != (byte)'H' ||
+			   	buffer[1] != (byte)'L' ||
+			   	buffer[2] != (byte)'U' ||
+			   	buffer[3] != (byte)'A' )
+				throw new ArgumentException( "The buffer isn't a valid buffer constructed by AllocBuffer." );
+
+			return InternalFinishBuffer( buffer );
+		}
+
+		/// <summary>
 		/// Gets the length of the string, in bytes.
 		/// </summary>
 		public int Length { get { return InternalData != null ? InternalData.Length - 4 : 0; } }
