@@ -316,6 +316,26 @@ namespace Henchmen.Lua
 			}
 		}
 
+		/// <summary>
+		/// Clears the table and resizes it sunderlying
+		/// storage to accept new data.
+		/// </summary>
+		public void Clear( int numArraySlots, int numNodes )
+		{
+			if( numArraySlots < 0 || numNodes < 0 )
+				throw new ArgumentOutOfRangeException();
+
+			if( array != null )
+			{
+
+				array = null;
+			}
+
+			nodes = EmptyNodes;
+
+			Resize( numArraySlots, numNodes );
+		}
+
 		#endregion
 
 		/// <summary>
