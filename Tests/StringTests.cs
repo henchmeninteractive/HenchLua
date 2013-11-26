@@ -77,5 +77,19 @@ namespace Henchmen.Lua.Tests
 				Assert.AreEqual( so.GetHashCode(), sn.GetHashCode() );
 			}
 		}
+
+		[TestMethod]
+		public void IndexOf()
+		{
+			var testStr = (LString)"This is only a test of the emergency broadcast system.";
+
+			Assert.AreEqual( 0, testStr.IndexOf( "This" ) );
+			Assert.AreEqual( 0, testStr.IndexOf( "This", 0, 4 ) );
+			Assert.AreEqual( 13, testStr.IndexOf( "a" ) );
+			Assert.AreEqual( 13, testStr.IndexOf( "a", 13 ) );
+			Assert.AreEqual( 40, testStr.IndexOf( "a", 14 ) );
+			Assert.AreEqual( -1, testStr.IndexOf( "amergency" ) );
+			Assert.AreEqual( testStr.Length - 7, testStr.IndexOf( "system." ) );
+		}
 	}
 }

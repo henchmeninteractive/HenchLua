@@ -263,6 +263,49 @@ namespace Henchmen.Lua
 			return Substring( index, Length - index );
 		}
 
+		public int IndexOf( LString str, int index, int count )
+		{
+			if( str.IsNil )
+				throw new ArgumentNullException( "str" );
+
+			if( index < 0 || count < 0 || index > Length - count )
+				throw new ArgumentOutOfRangeException( "index" );
+
+			count -= str.Length;
+
+			var data = InternalData;
+			var strData = str.InternalData;
+
+			for( int i = index + BufferDataOffset; count-- >= 0; i++ )
+			{
+				for( int ii = i, j = BufferDataOffset; j < strData.Length; ii++, j++ )
+				{
+					if( data[ii] != strData[j] )
+						goto notFound;
+				}
+
+				return i - BufferDataOffset;
+
+			notFound:
+				;
+			}
+
+			return -1;
+		}
+
+		public int IndexOf( LString str, int index )
+		{
+			if( index < 0 )
+				throw new ArgumentOutOfRangeException( "index" );
+
+			return IndexOf( str, index, Length - index );
+		}
+
+		public int IndexOf( LString str )
+		{
+			return IndexOf( str, 0, Length );
+		}
+
 		internal static bool InternalEquals( byte[] a, byte[] b )
 		{
 			if( a == b )
