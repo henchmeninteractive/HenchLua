@@ -905,6 +905,27 @@ namespace Henchmen.Lua
 
 		#region GetNext, Enumerator, IEnumerable
 
+		/// <summary>
+		/// Gets the next element in the table during an enumeration.
+		/// </summary>
+		/// <param name="key">
+		/// On entry, the key of the previous value or <c>nil</c> to get the first entry.
+		/// On exit, the key of the current value or <c>nil</c> if there are no more entries.
+		/// </param>
+		/// <param name="value">
+		/// The current value or <c>nil</c> if there is none.
+		/// </param>
+		/// <returns>
+		/// <c>true</c> if a value was retrieved, otherwise false.
+		/// </returns>
+		/// <exception cref="ArgumentException">
+		/// <paramref name="key"/> could not be found in the table.
+		/// </exception>
+		/// <remarks>
+		/// Note that this is not strictly equivalent to Lua's implementation of next as
+		/// it is not stable with respect to keys being set to null during traversal. If
+		/// you need a stable iteration, use the enumerator returned by <see cref="GetEnumerator"/>.
+		/// </remarks>
 		public bool GetNext( ref Value key, out Value value )
 		{
 			int loc;
@@ -920,9 +941,14 @@ namespace Henchmen.Lua
 				loc = 0;
 			}
 
+			return GetNext( ref loc, out key, out value );
+		}
+
+		internal bool GetNext( ref int loc, out Value key, out Value value )
+		{
 			if( loc < 0 )
 			{
-				//the value's found at loc, get the real
+				//the last value was found at loc, get the real
 				//index and advance to the next node
 
 				loc = -loc - 1;
@@ -940,14 +966,14 @@ namespace Henchmen.Lua
 				//result, loc is already one past of the index of
 				//the key (that is, it points to the next key)
 
-				for( ; loc < array.Length; loc++ )
+				while( loc < array.Length )
 				{
-					var val = array[loc];
+					var val = array[loc++];
 
 					if( val.Val != null )
 					{
 						key.RefVal = Value.NumTypeTag;
-						key.NumVal = loc + 1;
+						key.NumVal = loc;
 
 						val.ToValue( out value );
 
@@ -970,10 +996,13 @@ namespace Henchmen.Lua
 				nodes[loc].Key.ToValue( out key );
 				nodes[loc].Value.ToValue( out value );
 
+				loc = -(loc + 1);
+
 				return true;
 			}
 
 			//found nothing
+			key = new Value();
 			value = new Value();
 			return false;
 		}
@@ -983,10 +1012,12 @@ namespace Henchmen.Lua
 			internal Enumerator( Table owner )
 			{
 				this.owner = owner;
+				loc = 0;
 				key = value = new Value();
 			}
 
 			private Table owner;
+			private int loc;
 			private Value key, value;
 
 			#region IEnumerator<KeyValuePair<Value,Value>> Members
@@ -1015,11 +1046,12 @@ namespace Henchmen.Lua
 
 			public bool MoveNext()
 			{
-				return owner.GetNext( ref key, out value );
+				return owner.GetNext( ref loc, out key, out value );
 			}
 
 			public void Reset()
 			{
+				loc = 0;
 				key = value = new Value();
 			}
 

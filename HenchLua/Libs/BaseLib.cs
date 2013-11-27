@@ -83,11 +83,9 @@ namespace Henchmen.Lua.Libs
 
 		private static int BNext( Thread l )
 		{
-			l.StackTop = 2;
-
 			var tbl = (Table)l[1];
 			if( tbl == null )
-				throw new InvalidCastException();
+				throw new ArgumentNullException();
 
 			Value key = l[2];
 			Value val;
@@ -96,6 +94,23 @@ namespace Henchmen.Lua.Libs
 				return l.SetReturnValues( key, val );
 			else
 				return l.SetNilReturnValue();
+		}
+
+		private sealed class StableNext : UserFunction
+		{
+			private int loc;
+			public override int Execute( Thread l )
+			{
+				var tbl = (Table)l[1];
+				if( tbl == null )
+					throw new ArgumentNullException();
+
+				Value key, val;
+				if( tbl.GetNext( ref loc, out key, out val ) )
+					return l.SetReturnValues( key, val );
+				else
+					return l.SetNilReturnValue();
+			}
 		}
 
 		private static int BPairs( Thread l )
@@ -111,7 +126,8 @@ namespace Henchmen.Lua.Libs
 			}
 			else
 			{
-				l.SetStack( Next, val, Value.Nil );
+				l.SetStack( (Callable)new StableNext(),
+					val, Value.Nil );
 			}
 
 			return 3;
