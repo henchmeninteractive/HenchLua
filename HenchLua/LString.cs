@@ -363,6 +363,19 @@ namespace Henchmen.Lua
 			return obj is LString && Equals( (LString)obj );
 		}
 
+		public static LString operator +( LString a, LString b )
+		{
+			if( a.IsNil || b.IsNil )
+				throw new ArgumentNullException();
+
+			var buf = InternalAllocBuffer( a.Length + b.Length );
+			
+			Array.Copy( a.InternalData, BufferDataOffset, buf, BufferDataOffset, a.Length );
+			Array.Copy( b.InternalData, BufferDataOffset, buf, BufferDataOffset + a.Length, b.Length );
+			
+			return InternalFinishBuffer( buf );
+		}
+
 		public static bool operator ==( LString a, LString b )
 		{
 			return InternalEquals( a.InternalData, b.InternalData );
