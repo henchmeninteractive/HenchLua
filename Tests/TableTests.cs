@@ -345,6 +345,20 @@ namespace Henchmen.Lua.Tests
 		}
 
 		[TestMethod]
+		public void GrowWithNumKeysInNodes()
+		{
+			var ta = new Table( 0, 2 );
+			
+			ta[1] = 1;
+			ta[2] = 2;
+			ta[3] = 3;
+
+			Assert.AreEqual( ta[1], 1 );
+			Assert.AreEqual( ta[2], 2 );
+			Assert.AreEqual( ta[3], 3 );
+		}
+
+		[TestMethod]
 		public void NextTest_AllIntKeys()
 		{
 			var t = new Table( 110, 0 );

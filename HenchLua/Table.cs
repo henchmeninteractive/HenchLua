@@ -554,7 +554,9 @@ namespace Henchmen.Lua
 			if( asNumKey != null && double.IsNaN( asNumKey.Value ) )
 				throw new ArgumentException( "key is NaN", "key" );
 
-			if( nodes == EmptyNodes )
+			if( nodes == EmptyNodes && !isResizing )
+				//the resizing case happens when we grow a
+				//node-only table into an array-only table
 				Grow( key );
 
 		insert:
