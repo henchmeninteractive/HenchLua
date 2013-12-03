@@ -545,7 +545,7 @@ namespace Henchmen.Lua
 
 		#endregion
 
-		internal int InsertNewKey( CompactValue key )
+		internal int InsertNewKey( CompactValue key, bool isResizing = false )
 		{
 			if( key.Val == null )
 				throw new ArgumentNullException( "key" );
@@ -553,6 +553,10 @@ namespace Henchmen.Lua
 			var asNumKey = key.Val as NumBox;
 			if( asNumKey != null && double.IsNaN( asNumKey.Value ) )
 				throw new ArgumentException( "key is NaN", "key" );
+
+#if DEBUG
+			Debug.Assert( this.isResizing == isResizing );
+#endif
 
 			if( nodes == EmptyNodes && !isResizing )
 				//the resizing case happens when we grow a
@@ -804,7 +808,7 @@ namespace Henchmen.Lua
 						continue;
 
 					var key = new CompactValue( i );
-					var loc = InsertNewKey( key );
+					var loc = InsertNewKey( key, true );
 
 					Debug.Assert( loc < 0 );
 					nodes[-loc - 1].Value = val;
@@ -822,7 +826,7 @@ namespace Henchmen.Lua
 				if( node.Value.Val == null )
 					continue;
 
-				int loc = InsertNewKey( node.Key );
+				int loc = InsertNewKey( node.Key, true );
 				
 				if( loc > 0 )
 					array[loc - 1] = node.Value;
