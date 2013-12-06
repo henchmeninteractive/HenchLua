@@ -1,15 +1,15 @@
-HenchLua
+Preamble
 ===================
 
 HenchLua is distributed under a license which closely mirrors [the standard Lua license](http://www.lua.org/license.html).
 
 HenchLua is free software distributed under the terms of the MIT license reproduced here. HenchLua may be used for any purpose, including commercial purposes, at absolutely no cost. No paperwork, no royalties, no GNU-like "copyleft" restrictions, either. Just download it and use it.
 
-HenchLua is Open Source software. Its license is simple and liberal and is compatible with GPL. HenchLua is not in the public domain and PUC-Rio keeps its copyright.
+HenchLua is Open Source software. Its license is simple and liberal and is compatible with GPL. HenchLua is not in the public domain and Henchmen Interactive Inc. keeps its copyright.
 
 The spirit of the HenchLua license is that you are free to use HenchLua for any purpose at no cost without having to ask us. The only requirement is that if you do use HenchLua, then you should give us credit by including the copyright notice somewhere in your product or its documentation.
 
-HenchLua's implementation is not derived from licensed software.
+HenchLua's implementation is based on the standard Lua implementation, and is not derived from any other licensed software.
 
 License
 -------------------
