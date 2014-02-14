@@ -1053,6 +1053,7 @@ namespace Henchmen.Lua
 		}
 
 		private byte[] fmtBuf = new byte[32];
+		internal Libs.StringLib.MatchCaptureRec[] matchCapCache;
 
 		private void ExecuteUserCode()
 		{

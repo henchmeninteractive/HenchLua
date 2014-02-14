@@ -271,10 +271,14 @@ namespace Henchmen.Lua
 			if( index < 0 || count < 0 || index > Length - count )
 				throw new ArgumentOutOfRangeException( "index" );
 
-			count -= str.Length;
-
 			var data = InternalData;
 			var strData = str.InternalData;
+
+			if( strData.Length == BufferDataOffset )
+				//the empty string is always found at the beginning of the search
+				return index;
+
+			count -= strData.Length - BufferDataOffset;
 
 			for( int i = index + BufferDataOffset; count-- >= 0; i++ )
 			{

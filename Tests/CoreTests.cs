@@ -18,6 +18,12 @@ namespace Henchmen.Lua.Tests
 			RunTestScript( "goto.lua" );
 		}
 
+		[TestMethod]
+		public void PatternMatching()
+		{
+			RunTestScript( "pm.lua" );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			RunTestScriptWithGlobals( script, new Table(), expectedResults );
