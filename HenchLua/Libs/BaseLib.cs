@@ -7,6 +7,8 @@ namespace Henchmen.Lua.Libs
 {
 	public static class BaseLib
 	{
+		public static readonly LString Name__G = "_G";
+
 		public static readonly LString Name_GetMetatable = "getmetatable";
 		public static readonly Callable GetMetatable = (Callable)BGetMetatable;
 		public static readonly LString Name_SetMetatable = "setmetatable";
@@ -39,11 +41,21 @@ namespace Henchmen.Lua.Libs
 		public static readonly Callable CollectGarbage_Nop = (Callable)BCollectGarbage_Nop;
 		public static readonly Callable CollectGarbage_Gc = (Callable)BCollectGarbage_Gc;
 
+		public static readonly LString Name_RawGet = "rawget";
+		public static readonly Callable RawGet = (Callable)BRawGet;
+		public static readonly LString Name_RawSet = "rawset";
+		public static readonly Callable RawSet = (Callable)BRawSet;
+
 		public static void SetBaseMethods( Table globals )
 		{
+			globals[Name__G] = globals;
+
 			globals[Name_Next] = Next;
 			globals[Name_Pairs] = Pairs;
 			globals[Name_IPairs] = IPairs;
+
+			globals[Name_RawGet] = RawGet;
+			globals[Name_RawSet] = RawSet;
 
 			globals[Name_GetMetatable] = GetMetatable;
 			globals[Name_SetMetatable] = SetMetatable;
@@ -230,6 +242,19 @@ namespace Henchmen.Lua.Libs
 			}
 
 			throw new ArgumentException( "Expected a table value." );
+		}
+
+		private static int BRawGet( Thread l )
+		{
+			var ta = (Table)l[1];
+			return l.SetReturnValues( ta[l[2]] );
+		}
+
+		private static int BRawSet( Thread l )
+		{
+			var ta = (Table)l[1];
+			ta[l[2]] = l[3];
+			return 0;
 		}
 
 		private static int BToNumber( Thread l )

@@ -1054,6 +1054,68 @@ namespace Henchmen.Lua
 
 		private byte[] fmtBuf = new byte[32];
 		internal Libs.StringLib.MatchCaptureRec[] matchCapCache;
+		
+		private byte[] strBuilderBuf;
+		internal struct StrBuilder
+		{
+			public byte[] Buffer;
+			public int Length;
+
+			public void Append( byte b )
+			{
+				if( Length == Buffer.Length )
+					Array.Resize( ref Buffer, Buffer.Length * 2 );
+
+				Buffer[Length++] = b;
+			}
+
+			public void Append( byte[] b, int idx, int len )
+			{
+				var newLen = Length + len;
+				if( newLen > Buffer.Length )
+					Array.Resize( ref Buffer, Math.Max( Buffer.Length * 2, newLen ) );
+
+				Array.Copy( b, idx, Buffer, Length, len );
+				Length = newLen;
+			}
+
+			public void Append( LString str )
+			{
+				if( str.Length != 0 )
+					Append( str.InternalData, LString.BufferDataOffset, str.Length );
+			}
+
+			public LString ToLString()
+			{
+				return new LString( Buffer, 0, Length );
+			}
+		}
+
+		internal StrBuilder GetStrBuilder( int minCapacity )
+		{
+			StrBuilder ret;
+
+			if( strBuilderBuf != null && strBuilderBuf.Length >= minCapacity )
+			{
+				ret.Buffer = strBuilderBuf;
+				strBuilderBuf = null;
+			}
+			else
+			{
+				ret.Buffer = new byte[minCapacity];
+			}
+
+			ret.Length = 0;
+
+			return ret;
+		}
+
+		internal void RetireStrBuilder( StrBuilder b )
+		{
+			Debug.Assert( b.Buffer != null );
+			if( strBuilderBuf == null || strBuilderBuf.Length < b.Buffer.Length )
+				strBuilderBuf = b.Buffer;
+		}
 
 		private void ExecuteUserCode()
 		{

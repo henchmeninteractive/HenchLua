@@ -32,10 +32,13 @@ namespace Henchmen.Lua.Tests
 			try
 			{
 				//silly workaround for encoding issues
-				string source = File.ReadAllText( path );
-				var sourceBytes = Encoding.UTF8.GetBytes( source );
+				var sourceBytes = File.ReadAllBytes( path );
 				
-				var stat = Native.Load( state, new MemoryStream( sourceBytes ), Path.GetFileName( path ), "t" );
+				int idx = 0;
+				if( sourceBytes.Length >= 3 && sourceBytes[0] == 0xEF && sourceBytes[1] == 0xBB && sourceBytes[2] == 0xBF )
+					idx = 3;
+
+				var stat = Native.Load( state, new MemoryStream( sourceBytes, idx, sourceBytes.Length - idx, false ), Path.GetFileName( path ), "t" );
 
 				if( stat != Native.Result.OK )
 					throw new InvalidDataException( Native.ToString( state, 1 ) ?? "Failed loading chunk for test." );

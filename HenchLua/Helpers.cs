@@ -61,5 +61,16 @@ namespace Henchmen.Lua
 		{
 			return CheckOpt( value, (int?)null, opts );
 		}
+
+		internal static bool MemEq( byte[] b0, int idx0, byte[] b1, int idx1, int len )
+		{
+			for( int i = 0; i < len; i++ )
+			{
+				if( b0[idx0 + i] != b1[idx1 + i] )
+					return false;
+			}
+
+			return true;
+		}
 	}
 }

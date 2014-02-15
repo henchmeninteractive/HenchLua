@@ -13,20 +13,54 @@ namespace Henchmen.Lua.Libs
 		public static readonly LString Name_Rep = "rep";
 		public static readonly Callable Rep = (Callable)SRep;
 
+		public static readonly LString Name_Sub = "sub";
+		public static readonly Callable Sub = (Callable)SSub;
+
 		public static readonly LString Name_Find = "find";
 		public static readonly Callable Find = (Callable)SFind;
 
 		public static readonly LString Name_Match = "match";
 		public static readonly Callable Match = (Callable)SMatch;
 
+		public static readonly LString Name_GSub = "gsub";
+		public static readonly Callable GSub = (Callable)SGsub;
+
+		public static readonly LString Name_GMatch = "gmatch";
+		public static readonly Callable GMatch = (Callable)SGMatch;
+
+		public static readonly LString Name_Char = "char";
+		public static readonly Callable Char = (Callable)SChar;
+
+		public static readonly LString Name_Len = "len";
+		public static readonly Callable Len = (Callable)SLen;
+
+		public static readonly LString Name_Upper = "upper";
+		public static readonly Callable Upper = (Callable)SUpper;
+
+		public static readonly LString Name_Lower = "lower";
+		public static readonly Callable Lower = (Callable)SLower;
+		
 		public static void SetStringMethods( Table globals )
 		{
 			globals[Name_String] = new Table()
 			{
 				{ Name_Rep, Rep },
+				{ Name_Char, Char },
+				{ Name_Len, Len },
+				{ Name_Upper, Upper },
+				{ Name_Lower, Lower },
+				{ Name_Sub, Sub },
 				{ Name_Find, Find },
 				{ Name_Match, Match },
+				{ Name_GSub, GSub },
+				{ Name_GMatch, GMatch },
 			};
+		}
+
+		private static int SLen( Thread l )
+		{
+			var str = (LString)l[1];
+			return l.SetReturnValues( str.Length );
 		}
 
 		private static int SRep( Thread l )
@@ -77,6 +111,86 @@ namespace Henchmen.Lua.Libs
 			return l.SetReturnValues( LString.InternalFinishBuffer( retBuf ) );
 		}
 
+		private static int SChar( Thread l )
+		{
+			var buf = LString.InternalAllocBuffer( l.StackTop );
+			for( int i = LString.BufferDataOffset; i < buf.Length; i++ )
+			{
+				var cch = (int)l[i - LString.BufferDataOffset + 1];
+				if( cch < 0 || cch > 0xFF )
+					throw new ArgumentException( "value out of range" );
+				buf[i] = (byte)cch;
+			}
+			return l.SetReturnValues( LString.InternalFinishBuffer( buf ) );
+		}
+
+		private static int SUpper( Thread l )
+		{
+			var str = (LString)l[1];
+			var strDat = str.InternalData;
+
+			var ret = LString.InternalAllocBuffer( str.Length );
+
+			for( int i = LString.BufferDataOffset; i < ret.Length; i++ )
+			{
+				var ch = strDat[i];
+				if( ch >= (byte)'a' && ch <= (byte)'z' )
+					ch = (byte)((byte)'A' + (ch - (byte)'a'));
+				ret[i] = ch;
+			}
+
+			return l.SetReturnValues( LString.InternalFinishBuffer( ret ) );
+		}
+
+		private static int SLower( Thread l )
+		{
+			var str = (LString)l[1];
+			var strDat = str.InternalData;
+
+			var ret = LString.InternalAllocBuffer( str.Length );
+
+			for( int i = LString.BufferDataOffset; i < ret.Length; i++ )
+			{
+				var ch = strDat[i];
+				if( ch >= (byte)'A' && ch <= (byte)'Z' )
+					ch = (byte)((byte)'a' + (ch - (byte)'A'));
+				ret[i] = ch;
+			}
+
+			return l.SetReturnValues( LString.InternalFinishBuffer( ret ) );
+		}
+
+		private static int StrIdxArg( LString str, int idx )
+		{
+			if( idx == 0 )
+				return -1;
+
+			if( idx > 0 )
+				idx--;
+			else if( idx < 0 )
+				idx += str.Length;
+
+			if( idx < 0 )
+				idx = 0;
+			else if( idx > str.Length )
+				idx = str.Length;
+
+			return idx;
+		}
+
+		private static int SSub( Thread l )
+		{
+			var str = (LString)l[1];
+			
+			var beg = StrIdxArg( str, (int)l[2] );
+			var end = l.StackTop >= 3 ? StrIdxArg( str, (int)l[3] ) : str.Length - 1;
+
+			if( beg <= end )
+				return l.SetReturnValues( str.Substring( beg, end - beg + 1 ) );
+			else
+				return l.SetReturnValues( LString.Empty );
+		}
+
 		private static int SFind( Thread l )
 		{
 			return FindCore( l, true );
@@ -87,21 +201,71 @@ namespace Henchmen.Lua.Libs
 			return FindCore( l, false );
 		}
 
+		private static int SGMatch( Thread l )
+		{
+			var str = (LString)l[1];
+			var pat = (LString)l[2];
+
+			return l.SetReturnValues( (Callable)new GMatcher( str, pat ) );
+		}
+
+		private class GMatcher : UserFunction
+		{
+			public GMatcher( LString str, LString pat )
+			{
+				if( str.IsNil || pat.IsNil )
+					throw new ArgumentNullException();
+
+				this.str = str.InternalData;
+				this.pat = pat.InternalData;
+			}
+
+			private byte[] str, pat;
+			private int sIdx = LString.BufferDataOffset;
+
+			public override int Execute( Thread l )
+			{
+				MatchState ms;
+				InitMatchState( out ms, l );
+
+				ms.Str = str;
+				ms.StrInit = LString.BufferDataOffset;
+				
+				ms.Pat = pat;
+
+				while( sIdx <= str.Length )
+				{
+					Debug.Assert( ms.MatchDepth == MaxCCalls );
+					ms.Level = 0;
+
+					var e = SMatch( ref ms, sIdx, LString.BufferDataOffset );
+					if( e != -1 )
+					{
+						int s = sIdx;
+						sIdx = s != e ? e : s + 1;
+						return PushCaptures( ref ms, s, e );
+					}
+
+					sIdx++;
+				}
+
+				RetireMatchState( ref ms );
+
+				return 0;
+			}
+		}
+
 		private static int FindCore( Thread l, bool isFind )
 		{
 			var str = (LString)l[1];
 			var pat = (LString)l[2];
 
-			int init = l.StackTop >= 3 ? (int)l[3] : 1;
-			if( init < 0 )
-				init = str.Length + init;
-
-			if( init < 1 )
-				init = 1;
-			else if( init > str.Length + 1 )
+			int init = l.StackTop >= 3 ? StrIdxArg( str, (int)l[3] ) : 0;
+			if( init == -1 )
+				init = 0;
+			
+			if( init == str.Length && init != 0 )
 				return l.SetNilReturnValue();
-
-			init--;
 
 			if( isFind && (l[4].ToBool() || !HasPatternSpecials( pat )) )
 			{
@@ -123,7 +287,7 @@ namespace Henchmen.Lua.Libs
 				ms.Pat = pat.InternalData;
 				int patInit = LString.BufferDataOffset;
 
-				bool anchor = pat[0] == '^';
+				bool anchor = patInit < ms.Pat.Length && ms.Pat[patInit] == (byte)'^';
 				if( anchor )
 					patInit++;
 
@@ -139,8 +303,8 @@ namespace Henchmen.Lua.Libs
 						if( isFind )
 						{
 							l.StackTop = 0;
-							l.Push( sPos + 1 );
-							l.Push( res );
+							l.Push( sPos - LString.BufferDataOffset + 1 );
+							l.Push( res - LString.BufferDataOffset );
 							return PushCaptures( ref ms, -1, -1 ) + 2;
 						}
 						else
@@ -153,6 +317,183 @@ namespace Henchmen.Lua.Libs
 				RetireMatchState( ref ms );
 				return l.SetNilReturnValue();
 			}
+		}
+
+		private static int SGsub( Thread l )
+		{
+			var str = (LString)l[1];
+			var pat = (LString)l[2];
+
+			var subst = l[3];
+			var subTy = subst.ValueType;
+
+			switch( subTy )
+			{
+			case LValueType.Number:
+				l.ConvertToString( ref subst );
+				break;
+
+			case LValueType.String:
+			case LValueType.Function:
+			case LValueType.Table:
+				break;
+
+			default:
+				throw new ArgumentException( "string/function/table expected" );
+			}
+
+			var max = l.StackTop >= 4 ? (int)l[4] : int.MaxValue;
+	
+			MatchState ms;
+			InitMatchState( out ms, l );
+
+			ms.Str = str.InternalData;
+			ms.StrInit = LString.BufferDataOffset;
+
+			ms.Pat = pat.InternalData;
+			int patInit = LString.BufferDataOffset;
+
+			bool anchor = patInit < ms.Pat.Length && ms.Pat[patInit] == (byte)'^';
+			if( anchor )
+				patInit++;
+
+			var strBuilder = l.GetStrBuilder( str.Length * 2 );
+
+			int sPos = LString.BufferDataOffset;
+
+			int n = 0;
+			while( n < max )
+			{
+				ms.Level = 0;
+				Debug.Assert( ms.MatchDepth == MaxCCalls );
+
+				var e = SMatch( ref ms, sPos, patInit );
+				if( e != -1 )
+				{
+					n++;
+
+					Value substVal;
+
+					switch( subTy )
+					{
+					case LValueType.Function:
+						{
+							l.Push( subst );
+
+							var nCap = PushCaptures( ref ms, sPos, e, false );
+							l.Call( nCap, 1 );
+							
+							substVal = l.PopValue();
+						}
+						break;
+
+					case LValueType.Table:
+						PushCapture( ref ms, 0, sPos, e );
+						substVal = l.GetTable( (Table)subst, l.PopValue() );
+						break;
+
+					case LValueType.Number:
+						//it's already been made a string
+						substVal = subst;
+						break;
+
+					case LValueType.String:
+						//need to handle escape sequences
+						{
+							var sb = (byte[])subst.RefVal;
+							for( int i = LString.BufferDataOffset; i < sb.Length; i++ )
+							{
+								var ch = sb[i];
+
+								if( ch != (byte)'%' )
+								{
+									strBuilder.Append( ch );
+									continue;
+								}
+
+								if( ++i == sb.Length )
+									throw new ArgumentException( "Invalid use of % in replacement string" );
+
+								ch = sb[i];
+								
+								if( ch == (byte)'%' )
+								{
+									strBuilder.Append( ch );
+									continue;
+								}
+
+								switch( ch )
+								{
+								case (byte)'0':
+									strBuilder.Append( ms.Str, sPos, e - sPos );
+									break;
+
+								case (byte)'1':
+								case (byte)'2':
+								case (byte)'3':
+								case (byte)'4':
+								case (byte)'5':
+								case (byte)'6':
+								case (byte)'7':
+								case (byte)'8':
+								case (byte)'9':
+									{
+										int idx = ch - (byte)'1';
+										PushCapture( ref ms, idx, sPos, e );
+										substVal = l.PopValue();
+										l.ConvertToString( ref substVal );
+										strBuilder.Append( (LString)substVal );										
+									}
+									break;
+
+								default:
+									throw new ArgumentException( "Invalid use o f% in replacement string" );
+								}
+							}
+						}
+
+						substVal = new Value(); //hush, little compiler
+						break;
+
+					default:
+						substVal = new Value();
+						break;
+					}
+
+					if( subTy != LValueType.String )
+					{
+						//strings already appended, need to handle this case now
+
+						if( !substVal.ToBool() )
+						{
+							strBuilder.Append( ms.Str, sPos, e - sPos );
+						}
+						else
+						{
+							l.ConvertToString( ref substVal );
+							strBuilder.Append( (LString)substVal );
+						}
+					}
+				}
+
+				if( e != -1 && e > sPos )
+					sPos = e;
+				else if( sPos < ms.Str.Length )
+					strBuilder.Append( ms.Str[sPos++] );
+				else
+					break;
+
+				if( anchor )
+					break;
+			}
+
+			strBuilder.Append( ms.Str, sPos, ms.Str.Length - sPos );
+			var ret = strBuilder.ToLString();
+			
+			l.RetireStrBuilder( strBuilder );
+			RetireMatchState( ref ms );
+
+			return l.SetReturnValues( ret, n );
 		}
 
 		private static bool HasPatternSpecials( LString pat )
@@ -240,7 +581,7 @@ namespace Henchmen.Lua.Libs
 
 		private static void PushCapture( ref MatchState ms, int i, int sPos, int esPos )
 		{
-			if( i > ms.Level )
+			if( i >= ms.Level )
 			{
 				if( i == 0 )
 					ms.L.Push( new LString( ms.Str, sPos, esPos - sPos ) );
@@ -319,7 +660,7 @@ namespace Henchmen.Lua.Libs
 						var ep = ClassEnd( ref ms, pPos );
 						var prev = sPos == ms.StrInit ? (byte)'\0' : str[sPos - 1];
 						if( !MatchBracketClass( ref ms, prev, pPos, ep - 1 ) &&
-							MatchBracketClass( ref ms, str[sPos], pPos, ep - 1 ) )
+							MatchBracketClass( ref ms, sPos < str.Length ? str[sPos] : (byte)0, pPos, ep - 1 ) )
 						{
 							pPos = ep;
 							goto init;
@@ -359,7 +700,7 @@ namespace Henchmen.Lua.Libs
 
 					if( !SingleMatch( ref ms, sPos, pPos, ep ) )
 					{
-						switch( pat[ep] )
+						switch( ep < pat.Length ? pat[ep] : (byte)0 )
 						{
 						case (byte)'*':
 						case (byte)'?':
@@ -374,7 +715,7 @@ namespace Henchmen.Lua.Libs
 					}
 					else
 					{
-						switch( pat[ep] )
+						switch( ep < pat.Length ? pat[ep] : (byte)0 )
 						{
 						case (byte)'?':
 							{
@@ -415,29 +756,190 @@ namespace Henchmen.Lua.Libs
 			return sPos;
 		}
 
-		private static int StartCapture( ref MatchState ms, int sPos, int pPos, int flag )
+		private static int StartCapture( ref MatchState ms, int sPos, int pPos, int what )
 		{
-			throw new NotImplementedException();
+			var lv = ms.Level;
+			if( lv >= MaxCaptures )
+				throw new ArgumentException( "too many captures" );
+
+			ms.Captures[lv] = new MatchCaptureRec() { Pos = sPos, Len = what };
+			ms.Level = lv + 1;
+
+			var res = SMatch( ref ms, sPos, pPos );
+			if( res == -1 )
+				ms.Level = lv;
+
+			return res;
 		}
 
 		private static int EndCapture( ref MatchState ms, int sPos, int pPos )
 		{
-			throw new NotImplementedException();
+			int l = ms.Level;
+			for( l--; l >= 0; l-- )
+			{
+				if( ms.Captures[l].Len == CapUnfinished )
+					break;
+			}
+
+			if( l < 0 )
+				throw new ArgumentException( "invalid pattern capture" );
+
+			ms.Captures[l].Len = sPos - ms.Captures[l].Pos;
+			
+			var res = SMatch( ref ms, sPos, pPos );
+			if( res == -1 )
+				ms.Captures[l].Len = CapUnfinished;
+
+			return res;
 		}
 
 		private static int MatchBalance( ref MatchState ms, int sPos, int pPos )
 		{
-			throw new NotImplementedException();
+			var str = ms.Str;
+			var pat = ms.Pat;
+			
+			if( pPos >= pat.Length - 1 )
+				throw new ArgumentException( "malformed pattern (missing arguments to %b)" );
+
+			var b = pat[pPos];
+
+			if( sPos < str.Length && str[sPos] != b )
+				return -1;
+
+			var e = pat[pPos + 1];
+
+			int count = 1;
+			while( ++sPos < str.Length )
+			{
+				var ch = str[sPos];
+
+				if( ch == e )
+				{
+					if( --count == 0 )
+						return sPos + 1;
+				}
+				else if( ch == b )
+					count++;
+			}
+
+			return -1;
 		}
 
-		private static bool MatchClass( byte ch, byte pat )
+		private static bool MatchClass( byte ch, byte cl )
 		{
-			throw new NotImplementedException();
+			if( (cl & 0x80) != 0 )
+				return ch == cl;
+
+			var isNeg = char.IsUpper( (char)cl );
+			if( isNeg )
+				cl = (byte)char.ToLower( (char)cl );
+
+			bool ret;
+
+			if( (ch & 0x80) != 0 )
+			{
+				ret = ch == cl;
+				return isNeg ? !ret : ret;
+			}
+			
+			switch( cl )
+			{
+			case (byte)'a':
+				ret = (ch >= (byte)'a' && ch <= (byte)'z') ||
+					(ch >= (byte)'A' && ch <= (byte)'Z');
+				break;
+
+			case (byte)'c': 
+				ret = (ch >= 0 && ch <= 31) || ch == 127;
+				break;
+
+			case (byte)'d':
+				ret = ch >= (byte)'0' && ch <= (byte)'9';
+				break;
+
+			case (byte)'g':
+				ret = ch >= 33 && ch <= 126;
+				break;
+			
+			case (byte)'l':
+				ret = ch >= (byte)'a' && ch <= (byte)'z';
+				break;
+			
+			case (byte)'p':
+				ret = (ch >= 33 && ch <= 47) ||
+					(ch >= 58 && ch <= 64) ||
+					(ch >= 91 && ch <= 96) ||
+					(ch >= 123 && ch <= 126);
+				break;
+			
+			case (byte)'s':
+				ret = (ch >= 9 && ch <= 13) || ch == (byte)' ';
+				break;
+
+			case (byte)'u':
+				ret = ch >= (byte)'A' && ch <= (byte)'Z';
+				break;
+
+			case (byte)'w':
+				ret = (ch >= (byte)'a' && ch <= (byte)'z') ||
+					(ch >= (byte)'A' && ch <= (byte)'Z') ||
+					(ch >= (byte)'0' && ch <= (byte)'9');
+				break;
+
+			case (byte)'x':
+				ret = (ch >= (byte)'0' && ch <= (byte)'9') ||
+					(ch >= (byte)'a' && ch <= (byte)'f') ||
+					(ch >= (byte)'A' && ch <= (byte)'F');
+				break;
+
+			case (byte)'z':
+				ret = ch == 0;
+				break;
+			
+			default:
+				return ch == cl;
+			}
+
+			if( isNeg )
+				ret = !ret;
+
+			return ret;
 		}
 
 		private static bool MatchBracketClass( ref MatchState ms, byte ch, int pPos, int epPos )
 		{
-			throw new NotImplementedException();
+			var pat = ms.Pat;
+
+			bool sig = true;
+			if( pat[pPos + 1] == (byte)'^' )
+			{
+				sig = false;
+				pPos++;
+			}
+
+			while( ++pPos < epPos )
+			{
+				var pp = pat[pPos];
+
+				if( pp == (byte)'%' )
+				{
+					pPos++;
+					if( MatchClass( ch, pat[pPos] ) )
+						return sig;
+				}
+				else if( pPos + 2 < epPos && pat[pPos + 1] == (byte)'-' )
+				{
+					pPos += 2;
+					if( pp <= ch && ch <= pat[pPos] )
+						return sig;
+				}
+				else if( pp == ch )
+				{
+					return sig;
+				}
+			}
+
+			return !sig;
 		}
 
 		private static int ClassEnd( ref MatchState ms, int pPos )
@@ -469,13 +971,25 @@ namespace Henchmen.Lua.Libs
 			default:
 				return pPos;
 			}
-
-			throw new NotImplementedException();
 		}
 
-		private static int MatchCapture( ref MatchState ms, int sPos, byte pch )
+		private static int MatchCapture( ref MatchState ms, int sPos, byte l )
 		{
-			throw new NotImplementedException();
+			l -= (byte)'1';
+
+			if( l < 0 || l >= ms.Level || ms.Captures[l].Len == CapUnfinished )
+				throw new ArgumentException( "invalid capture index" );
+
+			var cap = ms.Captures[l];
+			var str = ms.Str;
+
+			if( str.Length - sPos >= cap.Len &&
+				Helpers.MemEq( str, sPos, str, cap.Pos, cap.Len ) )
+			{
+				return sPos + cap.Len;
+			}
+			
+			return -1;
 		}
 
 		private static bool SingleMatch( ref MatchState ms, int sPos, int pPos, int ep )
@@ -507,12 +1021,33 @@ namespace Henchmen.Lua.Libs
 
 		private static int MaxExpand( ref MatchState ms, int sPos, int pPos, int ep )
 		{
-			throw new NotImplementedException();
+			int i = 0;
+			while( SingleMatch( ref ms, sPos + i, pPos, ep ) )
+				i++;
+
+			while( i >= 0 )
+			{
+				var res = SMatch( ref ms, sPos + i, ep + 1 );
+				if( res != -1 )
+					return res;
+				i--;
+			}
+
+			return -1;
 		}
 
 		private static int MinExpand( ref MatchState ms, int sPos, int pPos, int ep )
 		{
-			throw new NotImplementedException();
+			for( ; ; )
+			{
+				var res = SMatch( ref ms, sPos, ep + 1 );
+				if( res != -1 )
+					return res;
+				else if( SingleMatch( ref ms, sPos, pPos, ep ) )
+					sPos++;
+				else
+					return -1;
+			}
 		}
 	}
 }
