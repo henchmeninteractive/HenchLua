@@ -433,7 +433,7 @@ namespace Henchmen.Lua
 					{
 						int a = stackBase + op.A;
 						int b = op.B;
-						do { stack[a].SetNil(); } while( b-- != 0 );
+						do { stack[a++].SetNil(); } while( b-- != 0 );
 					}
 					break;
 
