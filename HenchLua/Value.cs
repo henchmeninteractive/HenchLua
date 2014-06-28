@@ -509,7 +509,7 @@ namespace Henchmen.Lua
 		
 		public static explicit operator Callable( Value value )
 		{
-			if( !Callable.IsCallable( value.RefVal ) )
+			if( value.RefVal != null && !Callable.IsCallable( value.RefVal ) )
 				throw new InvalidCastException();
 			
 			return new Callable() { Val = value.RefVal };

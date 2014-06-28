@@ -1532,6 +1532,21 @@ namespace Henchmen.Lua
 			throw new NotImplementedException();
 		}
 
+		internal bool Less( Value a, Value b, Callable less )
+		{
+			if( less.IsNotNil )
+			{
+				SetStack( less, a, b );
+				Call( 2, 1 );
+				return PopValue().ToBool();
+			}
+
+			if( a.RefVal == Value.NumTypeTag && b.RefVal == Value.NumTypeTag )
+				return a.NumVal < b.NumVal;
+
+			return Less( ref a, ref b );
+		}
+
 		private bool LessEqual( ref Value a, ref Value b )
 		{
 			var asStrA = a.RefVal as byte[];

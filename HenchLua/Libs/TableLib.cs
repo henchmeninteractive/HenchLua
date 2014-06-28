@@ -17,6 +17,9 @@ namespace Henchmen.Lua.Libs
 		public static readonly LString Name_Unpack = "unpack";
 		public static readonly Callable Unpack = (Callable)TUnpack;
 
+		public static readonly LString Name_Sort = "sort";
+		public static readonly Callable Sort = (Callable)TSort;
+
 		public static void SetTableMethods( Table globals )
 		{
 			globals[Name_Table] = new Table()
@@ -24,6 +27,7 @@ namespace Henchmen.Lua.Libs
 				{ Name_Insert, Insert },
 				{ Name_Remove, Remove },
 				{ Name_Unpack, Unpack },
+				{ Name_Sort, Sort },
 			};
 		}
 
@@ -108,6 +112,117 @@ namespace Henchmen.Lua.Libs
 				l[i + 1] = t[min + i];
 
 			return n;
+		}
+
+		private static int TSort( Thread l )		
+		{
+			var list = (Table)l[1];
+			var less = (Callable)l[2];
+
+			QSort( l, list, less, 1, list.GetLen() );			
+
+			return 0;
+		}
+
+		private static void QSort( Thread thread, Table list,
+			Callable less, int l, int u )
+		{
+			while( l < u )
+			{
+				var vl = list[l];
+				var vu = list[u];
+
+				if( thread.Less( vu, vl, less ) )
+				{
+					//swap
+
+					var tmp = vl;
+					vl = vu;
+					vu = tmp;
+
+					list[l] = vl;
+					list[u] = vu;
+				}
+
+				if( u - l == 1 )
+					//only had two elements
+					break;
+
+				var i = (l + u) / 2;
+				var vi = list[i];
+
+				if( thread.Less( vi, vl, less ) )
+				{
+					var tmp = vl;
+					vl = vi;
+					vi = tmp;
+
+					list[l] = vl;
+					list[i] = vi;
+				}
+				else if( thread.Less( vu, vi, less ) )
+				{
+					var tmp = vu;
+					vu = vi;
+					vi = tmp;
+
+					list[u] = vu;
+					list[i] = vi;
+				}
+
+				if( u - l == 2 )
+					//only had three elements
+					break;
+
+				var vp = vi;
+
+				var j = u - 1;
+				var vj = list[j];
+
+				list[j] = vi;
+				list[i] = vj;
+
+				i = l;
+
+				for( ; ; )
+				{
+					while( thread.Less( vi = list[++i], vp, less ) )
+					{
+						if( i >= u )
+							throw new ArgumentException( "Invalid sort function." );
+					}
+
+					while( thread.Less( vp, vj = list[--j], less ) )
+					{
+						if( j <= l )
+							throw new ArgumentException( "Invalid sort function." );
+					}
+
+					if( j < i )
+						break;
+
+					list[i] = vj;
+					list[j] = vi;
+				}
+
+				list[u - 1] = list[i];
+				list[i] = vp;
+
+				if( i - l < u - i )
+				{
+					j = l;
+					i--;
+					l = i + 2;
+				}
+				else
+				{
+					j = i + 1;
+					i = u;
+					u = j - 2;
+				}
+
+				QSort( thread, list, less, j, i );
+			}
 		}
 	}
 }

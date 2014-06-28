@@ -36,6 +36,12 @@ namespace Henchmen.Lua.Tests
 			RunTestScript( "Pairs.lua", 8 );
 		}
 
+		[TestMethod]
+		public void Sort()
+		{
+			RunTestScript( "TableSort.lua", 42 );
+		}
+
 		private static void RunTestScript( string script, params Value[] expectedResults )
 		{
 			RunTestScriptWithGlobals( script, new Table(), expectedResults );
